@@ -65,10 +65,7 @@ class BaseRunner(metaclass=ABCMeta):
                           'train_step() and val_step() in the model instead.')
             # raise an error is `batch_processor` is not None and
             # `model.train_step()` exists.
-            if is_module_wrapper(model):
-                _model = model.module
-            else:
-                _model = model
+            _model = model.module if is_module_wrapper(model) else model
             if hasattr(_model, 'train_step') or hasattr(_model, 'val_step'):
                 raise RuntimeError(
                     'batch_processor and model.train_step()/model.val_step() '
@@ -213,9 +210,10 @@ class BaseRunner(metaclass=ABCMeta):
         if isinstance(self.optimizer, torch.optim.Optimizer):
             lr = [group['lr'] for group in self.optimizer.param_groups]
         elif isinstance(self.optimizer, dict):
-            lr = dict()
-            for name, optim in self.optimizer.items():
-                lr[name] = [group['lr'] for group in optim.param_groups]
+            lr = {
+                name: [group['lr'] for group in optim.param_groups]
+                for name, optim in self.optimizer.items()
+            }
         else:
             raise RuntimeError(
                 'lr is not applicable because optimizer does not exist.')
@@ -247,7 +245,7 @@ class BaseRunner(metaclass=ABCMeta):
         elif isinstance(self.optimizer, torch.optim.Optimizer):
             momentums = _get_momentum(self.optimizer)
         elif isinstance(self.optimizer, dict):
-            momentums = dict()
+            momentums = {}
             for name, optim in self.optimizer.items():
                 momentums[name] = _get_momentum(optim)
         return momentums
@@ -410,7 +408,7 @@ class BaseRunner(metaclass=ABCMeta):
             # the string will not be changed if it contains capital letters.
             if policy_type == policy_type.lower():
                 policy_type = policy_type.title()
-            hook_type = policy_type + 'LrUpdaterHook'
+            hook_type = f'{policy_type}LrUpdaterHook'
             lr_config['type'] = hook_type
             hook = mmcv.build_from_cfg(lr_config, HOOKS)
         else:
@@ -431,7 +429,7 @@ class BaseRunner(metaclass=ABCMeta):
             # the string will not be changed if it contains capital letters.
             if policy_type == policy_type.lower():
                 policy_type = policy_type.title()
-            hook_type = policy_type + 'MomentumUpdaterHook'
+            hook_type = f'{policy_type}MomentumUpdaterHook'
             momentum_config['type'] = hook_type
             hook = mmcv.build_from_cfg(momentum_config, HOOKS)
         else:

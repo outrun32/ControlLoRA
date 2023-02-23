@@ -14,9 +14,7 @@ from itertools import repeat
 def _ntuple(n):
 
     def parse(x):
-        if isinstance(x, collections.abc.Iterable):
-            return x
-        return tuple(repeat(x, n))
+        return x if isinstance(x, collections.abc.Iterable) else tuple(repeat(x, n))
 
     return parse
 
@@ -103,10 +101,7 @@ def iter_cast(inputs, dst_type, return_type=None):
 
     out_iterable = map(dst_type, inputs)
 
-    if return_type is None:
-        return out_iterable
-    else:
-        return return_type(out_iterable)
+    return out_iterable if return_type is None else return_type(out_iterable)
 
 
 def list_cast(inputs, dst_type):
@@ -141,12 +136,11 @@ def is_seq_of(seq, expected_type, seq_type=None):
     else:
         assert isinstance(seq_type, type)
         exp_seq_type = seq_type
-    if not isinstance(seq, exp_seq_type):
-        return False
-    for item in seq:
-        if not isinstance(item, expected_type):
-            return False
-    return True
+    return (
+        all(isinstance(item, expected_type) for item in seq)
+        if isinstance(seq, exp_seq_type)
+        else False
+    )
 
 
 def is_list_of(seq, expected_type):
@@ -251,10 +245,7 @@ def _check_py_package(package):
 
 
 def _check_executable(cmd):
-    if subprocess.call(f'which {cmd}', shell=True) != 0:
-        return False
-    else:
-        return True
+    return subprocess.call(f'which {cmd}', shell=True) == 0
 
 
 def requires_package(prerequisites):

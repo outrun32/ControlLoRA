@@ -119,11 +119,12 @@ class DefaultOptimizerConstructor:
 
         # get base lr and weight decay
         # weight_decay must be explicitly specified if mult is specified
-        if ('bias_decay_mult' in self.paramwise_cfg
-                or 'norm_decay_mult' in self.paramwise_cfg
-                or 'dwconv_decay_mult' in self.paramwise_cfg):
-            if self.base_wd is None:
-                raise ValueError('base_wd should not be None')
+        if (
+            'bias_decay_mult' in self.paramwise_cfg
+            or 'norm_decay_mult' in self.paramwise_cfg
+            or 'dwconv_decay_mult' in self.paramwise_cfg
+        ) and self.base_wd is None:
+            raise ValueError('base_wd should not be None')
 
     def _is_in(self, param_group, param_group_list):
         assert is_list_of(param_group_list, dict)
@@ -192,7 +193,7 @@ class DefaultOptimizerConstructor:
             if not is_custom:
                 # bias_lr_mult affects all bias parameters
                 # except for norm.bias dcn.conv_offset.bias
-                if name == 'bias' and not (is_norm or is_dcn_module):
+                if name == 'bias' and not is_norm and not is_dcn_module:
                     param_group['lr'] = self.base_lr * bias_lr_mult
 
                 if (prefix.find('conv_offset') != -1 and is_dcn_module

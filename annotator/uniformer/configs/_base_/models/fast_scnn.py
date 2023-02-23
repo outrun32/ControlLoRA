@@ -14,7 +14,8 @@ model = dict(
         fusion_out_channels=128,
         out_indices=(0, 1, 2),
         norm_cfg=norm_cfg,
-        align_corners=False),
+        align_corners=False,
+    ),
     decode_head=dict(
         type='DepthwiseSeparableFCNHead',
         in_channels=128,
@@ -25,7 +26,9 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4)),
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4
+        ),
+    ),
     auxiliary_head=[
         dict(
             type='FCNHead',
@@ -38,7 +41,9 @@ model = dict(
             concat_input=False,
             align_corners=False,
             loss_decode=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4)),
+                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4
+            ),
+        ),
         dict(
             type='FCNHead',
             in_channels=64,
@@ -50,8 +55,10 @@ model = dict(
             concat_input=False,
             align_corners=False,
             loss_decode=dict(
-                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4)),
+                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.4
+            ),
+        ),
     ],
-    # model training and testing settings
-    train_cfg=dict(),
-    test_cfg=dict(mode='whole'))
+    train_cfg={},
+    test_cfg=dict(mode='whole'),
+)

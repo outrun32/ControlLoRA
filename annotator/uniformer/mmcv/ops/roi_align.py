@@ -17,8 +17,7 @@ class RoIAlignFunction(Function):
     def symbolic(g, input, rois, output_size, spatial_scale, sampling_ratio,
                  pool_mode, aligned):
         from ..onnx import is_custom_op_loaded
-        has_custom_op = is_custom_op_loaded()
-        if has_custom_op:
+        if has_custom_op := is_custom_op_loaded():
             return g.op(
                 'mmcv::MMCVRoiAlign',
                 input,
@@ -29,36 +28,35 @@ class RoIAlignFunction(Function):
                 sampling_ratio_i=sampling_ratio,
                 mode_s=pool_mode,
                 aligned_i=aligned)
-        else:
-            from torch.onnx.symbolic_opset9 import sub, squeeze
-            from torch.onnx.symbolic_helper import _slice_helper
-            from torch.onnx import TensorProtoDataType
-            # batch_indices = rois[:, 0].long()
-            batch_indices = _slice_helper(
-                g, rois, axes=[1], starts=[0], ends=[1])
-            batch_indices = squeeze(g, batch_indices, 1)
-            batch_indices = g.op(
-                'Cast', batch_indices, to_i=TensorProtoDataType.INT64)
-            # rois = rois[:, 1:]
-            rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
-            if aligned:
-                # rois -= 0.5/spatial_scale
-                aligned_offset = g.op(
-                    'Constant',
-                    value_t=torch.tensor([0.5 / spatial_scale],
-                                         dtype=torch.float32))
-                rois = sub(g, rois, aligned_offset)
-            # roi align
-            return g.op(
-                'RoiAlign',
-                input,
-                rois,
-                batch_indices,
-                output_height_i=output_size[0],
-                output_width_i=output_size[1],
-                spatial_scale_f=spatial_scale,
-                sampling_ratio_i=max(0, sampling_ratio),
-                mode_s=pool_mode)
+        from torch.onnx.symbolic_opset9 import sub, squeeze
+        from torch.onnx.symbolic_helper import _slice_helper
+        from torch.onnx import TensorProtoDataType
+        # batch_indices = rois[:, 0].long()
+        batch_indices = _slice_helper(
+            g, rois, axes=[1], starts=[0], ends=[1])
+        batch_indices = squeeze(g, batch_indices, 1)
+        batch_indices = g.op(
+            'Cast', batch_indices, to_i=TensorProtoDataType.INT64)
+        # rois = rois[:, 1:]
+        rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
+        if aligned:
+            # rois -= 0.5/spatial_scale
+            aligned_offset = g.op(
+                'Constant',
+                value_t=torch.tensor([0.5 / spatial_scale],
+                                     dtype=torch.float32))
+            rois = sub(g, rois, aligned_offset)
+        # roi align
+        return g.op(
+            'RoiAlign',
+            input,
+            rois,
+            batch_indices,
+            output_height_i=output_size[0],
+            output_width_i=output_size[1],
+            spatial_scale_f=spatial_scale,
+            sampling_ratio_i=max(0, sampling_ratio),
+            mode_s=pool_mode)
 
     @staticmethod
     def forward(ctx,
@@ -196,21 +194,19 @@ class RoIAlign(nn.Module):
             rois: Bx5 boxes. First column is the index into N.\
                 The other 4 columns are xyxy.
         """
-        if self.use_torchvision:
-            from torchvision.ops import roi_align as tv_roi_align
-            if 'aligned' in tv_roi_align.__code__.co_varnames:
-                return tv_roi_align(input, rois, self.output_size,
-                                    self.spatial_scale, self.sampling_ratio,
-                                    self.aligned)
-            else:
-                if self.aligned:
-                    rois -= rois.new_tensor([0.] +
-                                            [0.5 / self.spatial_scale] * 4)
-                return tv_roi_align(input, rois, self.output_size,
-                                    self.spatial_scale, self.sampling_ratio)
-        else:
+        if not self.use_torchvision:
             return roi_align(input, rois, self.output_size, self.spatial_scale,
                              self.sampling_ratio, self.pool_mode, self.aligned)
+        from torchvision.ops import roi_align as tv_roi_align
+        if 'aligned' in tv_roi_align.__code__.co_varnames:
+            return tv_roi_align(input, rois, self.output_size,
+                                self.spatial_scale, self.sampling_ratio,
+                                self.aligned)
+        if self.aligned:
+            rois -= rois.new_tensor([0.] +
+                                    [0.5 / self.spatial_scale] * 4)
+        return tv_roi_align(input, rois, self.output_size,
+                            self.spatial_scale, self.sampling_ratio)
 
     def __repr__(self):
         s = self.__class__.__name__

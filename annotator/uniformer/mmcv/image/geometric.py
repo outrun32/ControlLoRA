@@ -89,10 +89,9 @@ def imresize(img,
             img, size, dst=out, interpolation=cv2_interp_codes[interpolation])
     if not return_scale:
         return resized_img
-    else:
-        w_scale = size[0] / w
-        h_scale = size[1] / h
-        return resized_img, w_scale, h_scale
+    w_scale = size[0] / w
+    h_scale = size[1] / h
+    return resized_img, w_scale, h_scale
 
 
 def imresize_to_multiple(img,
@@ -145,7 +144,7 @@ def imresize_to_multiple(img,
         size = _scale_size((w, h), scale_factor)
 
     divisor = to_2tuple(divisor)
-    size = tuple([int(np.ceil(s / d)) * d for s, d in zip(size, divisor)])
+    size = tuple(int(np.ceil(s / d)) * d for s, d in zip(size, divisor))
     resized_img, w_scale, h_scale = imresize(
         img,
         size,
@@ -153,10 +152,7 @@ def imresize_to_multiple(img,
         interpolation=interpolation,
         out=out,
         backend=backend)
-    if return_scale:
-        return resized_img, w_scale, h_scale
-    else:
-        return resized_img
+    return (resized_img, w_scale, h_scale) if return_scale else resized_img
 
 
 def imresize_like(img,
@@ -212,10 +208,7 @@ def rescale_size(old_size, scale, return_scale=False):
 
     new_size = _scale_size((w, h), scale_factor)
 
-    if return_scale:
-        return new_size, scale_factor
-    else:
-        return new_size
+    return (new_size, scale_factor) if return_scale else new_size
 
 
 def imrescale(img,
@@ -243,10 +236,7 @@ def imrescale(img,
     new_size, scale_factor = rescale_size((w, h), scale, return_scale=True)
     rescaled_img = imresize(
         img, new_size, interpolation=interpolation, backend=backend)
-    if return_scale:
-        return rescaled_img, scale_factor
-    else:
-        return rescaled_img
+    return (rescaled_img, scale_factor) if return_scale else rescaled_img
 
 
 def imflip(img, direction='horizontal'):
@@ -331,12 +321,13 @@ def imrotate(img,
         matrix[1, 2] += (new_h - h) * 0.5
         w = int(np.round(new_w))
         h = int(np.round(new_h))
-    rotated = cv2.warpAffine(
+    return cv2.warpAffine(
         img,
-        matrix, (w, h),
+        matrix,
+        (w, h),
         flags=cv2_interp_codes[interpolation],
-        borderValue=border_value)
-    return rotated
+        borderValue=border_value,
+    )
 
 
 def bbox_clip(bboxes, img_shape):
@@ -351,10 +342,9 @@ def bbox_clip(bboxes, img_shape):
     """
     assert bboxes.shape[-1] % 4 == 0
     cmin = np.empty(bboxes.shape[-1], dtype=bboxes.dtype)
-    cmin[0::2] = img_shape[1] - 1
+    cmin[::2] = img_shape[1] - 1
     cmin[1::2] = img_shape[0] - 1
-    clipped_bboxes = np.maximum(np.minimum(bboxes, cmin), 0)
-    return clipped_bboxes
+    return np.maximum(np.minimum(bboxes, cmin), 0)
 
 
 def bbox_scaling(bboxes, scale, clip_shape=None):
@@ -431,10 +421,7 @@ def imcrop(img, bboxes, scale=1.0, pad_fill=None):
                   ...] = img[y1:y1 + h, x1:x1 + w, ...]
         patches.append(patch)
 
-    if bboxes.ndim == 1:
-        return patches[0]
-    else:
-        return patches
+    return patches[0] if bboxes.ndim == 1 else patches
 
 
 def impad(img,
@@ -489,7 +476,7 @@ def impad(img,
                         f'But received {type(pad_val)}')
 
     # check padding
-    if isinstance(padding, tuple) and len(padding) in [2, 4]:
+    if isinstance(padding, tuple) and len(padding) in {2, 4}:
         if len(padding) == 2:
             padding = (padding[0], padding[1], padding[0], padding[1])
     elif isinstance(padding, numbers.Number):
@@ -560,10 +547,9 @@ def cutout(img, shape, pad_val=0):
     if isinstance(pad_val, (int, float)):
         pad_val = tuple([pad_val] * channels)
     elif isinstance(pad_val, tuple):
-        assert len(pad_val) == channels, \
-            'Expected the num of elements in tuple equals the channels' \
-            'of input image. Found {} vs {}'.format(
-                len(pad_val), channels)
+        assert (
+            len(pad_val) == channels
+        ), f'Expected the num of elements in tuple equals the channelsof input image. Found {len(pad_val)} vs {channels}'
     else:
         raise TypeError(f'Invalid type {type(pad_val)} for `pad_val`')
 
@@ -638,15 +624,14 @@ def imshear(img,
     if isinstance(border_value, int):
         border_value = tuple([border_value] * channels)
     elif isinstance(border_value, tuple):
-        assert len(border_value) == channels, \
-            'Expected the num of elements in tuple equals the channels' \
-            'of input image. Found {} vs {}'.format(
-                len(border_value), channels)
+        assert (
+            len(border_value) == channels
+        ), f'Expected the num of elements in tuple equals the channelsof input image. Found {len(border_value)} vs {channels}'
     else:
         raise ValueError(
             f'Invalid type {type(border_value)} for `border_value`')
     shear_matrix = _get_shear_matrix(magnitude, direction)
-    sheared = cv2.warpAffine(
+    return cv2.warpAffine(
         img,
         shear_matrix,
         (width, height),
@@ -655,8 +640,8 @@ def imshear(img,
         # than 3) will raise TypeError in `cv2.warpAffine`.
         # Here simply slice the first 3 values in `border_value`.
         borderValue=border_value[:3],
-        flags=cv2_interp_codes[interpolation])
-    return sheared
+        flags=cv2_interp_codes[interpolation],
+    )
 
 
 def _get_translate_matrix(offset, direction='horizontal'):
@@ -707,15 +692,14 @@ def imtranslate(img,
     if isinstance(border_value, int):
         border_value = tuple([border_value] * channels)
     elif isinstance(border_value, tuple):
-        assert len(border_value) == channels, \
-            'Expected the num of elements in tuple equals the channels' \
-            'of input image. Found {} vs {}'.format(
-                len(border_value), channels)
+        assert (
+            len(border_value) == channels
+        ), f'Expected the num of elements in tuple equals the channelsof input image. Found {len(border_value)} vs {channels}'
     else:
         raise ValueError(
             f'Invalid type {type(border_value)} for `border_value`.')
     translate_matrix = _get_translate_matrix(offset, direction)
-    translated = cv2.warpAffine(
+    return cv2.warpAffine(
         img,
         translate_matrix,
         (width, height),
@@ -724,5 +708,5 @@ def imtranslate(img,
         # large than 3) will raise TypeError in `cv2.warpAffine`.
         # Here simply slice the first 3 values in `border_value`.
         borderValue=border_value[:3],
-        flags=cv2_interp_codes[interpolation])
-    return translated
+        flags=cv2_interp_codes[interpolation],
+    )

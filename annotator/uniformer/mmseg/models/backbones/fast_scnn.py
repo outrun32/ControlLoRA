@@ -159,14 +159,12 @@ class GlobalFeatureExtractor(nn.Module):
                 expand_ratio,
                 norm_cfg=self.norm_cfg)
         ]
-        for i in range(1, blocks):
-            layers.append(
-                InvertedResidual(
-                    out_channels,
-                    out_channels,
-                    1,
-                    expand_ratio,
-                    norm_cfg=self.norm_cfg))
+        layers.extend(
+            InvertedResidual(
+                out_channels, out_channels, 1, expand_ratio, norm_cfg=self.norm_cfg
+            )
+            for _ in range(1, blocks)
+        )
         return nn.Sequential(*layers)
 
     def forward(self, x):

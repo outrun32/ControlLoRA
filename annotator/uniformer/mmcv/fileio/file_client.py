@@ -75,8 +75,7 @@ class CephBackend(BaseStorageBackend):
             for k, v in self.path_mapping.items():
                 filepath = filepath.replace(k, v)
         value = self._client.Get(filepath)
-        value_buf = memoryview(value)
-        return value_buf
+        return memoryview(value)
 
     def get_text(self, filepath, encoding=None):
         raise NotImplementedError
@@ -158,8 +157,7 @@ class PetrelBackend(BaseStorageBackend):
         filepath = self._map_path(filepath)
         filepath = self._format_path(filepath)
         value = self._client.Get(filepath)
-        value_buf = memoryview(value)
-        return value_buf
+        return memoryview(value)
 
     def get_text(self,
                  filepath: Union[str, Path],
@@ -292,8 +290,9 @@ class PetrelBackend(BaseStorageBackend):
         if filepath.endswith('/'):
             filepath = filepath[:-1]
         formatted_paths = [filepath]
-        for path in filepaths:
-            formatted_paths.append(self._format_path(self._map_path(path)))
+        formatted_paths.extend(
+            self._format_path(self._map_path(path)) for path in filepaths
+        )
         return '/'.join(formatted_paths)
 
     @contextmanager
@@ -383,7 +382,7 @@ class PetrelBackend(BaseStorageBackend):
         root = dir_path
 
         def _list_dir_or_file(dir_path, list_dir, list_file, suffix,
-                              recursive):
+                                  recursive):
             for path in self._client.list(dir_path):
                 # the `self.isdir` is not used here to determine whether path
                 # is a directory, because `self.isdir` relies on
@@ -391,10 +390,7 @@ class PetrelBackend(BaseStorageBackend):
                 if path.endswith('/'):  # a directory path
                     next_dir_path = self.join_path(dir_path, path)
                     if list_dir:
-                        # get the relative path and exclude the last
-                        # character '/'
-                        rel_dir = next_dir_path[len(root):-1]
-                        yield rel_dir
+                        yield next_dir_path[len(root):-1]
                     if recursive:
                         yield from _list_dir_or_file(next_dir_path, list_dir,
                                                      list_file, suffix,
@@ -441,8 +437,7 @@ class MemcachedBackend(BaseStorageBackend):
         filepath = str(filepath)
         import mc
         self._client.Get(filepath, self._mc_buffer)
-        value_buf = mc.ConvertBuffer(self._mc_buffer)
-        return value_buf
+        return mc.ConvertBuffer(self._mc_buffer)
 
     def get_text(self, filepath, encoding=None):
         raise NotImplementedError
@@ -668,7 +663,7 @@ class HardDiskBackend(BaseStorageBackend):
         root = dir_path
 
         def _list_dir_or_file(dir_path, list_dir, list_file, suffix,
-                              recursive):
+                                  recursive):
             for entry in os.scandir(dir_path):
                 if not entry.name.startswith('.') and entry.is_file():
                     rel_path = osp.relpath(entry.path, root)
@@ -677,8 +672,7 @@ class HardDiskBackend(BaseStorageBackend):
                         yield rel_path
                 elif osp.isdir(entry.path):
                     if list_dir:
-                        rel_dir = osp.relpath(entry.path, root)
-                        yield rel_dir
+                        yield osp.relpath(entry.path, root)
                     if recursive:
                         yield from _list_dir_or_file(entry.path, list_dir,
                                                      list_file, suffix,
@@ -692,8 +686,7 @@ class HTTPBackend(BaseStorageBackend):
     """HTTP and HTTPS storage bachend."""
 
     def get(self, filepath):
-        value_buf = urlopen(filepath).read()
-        return value_buf
+        return urlopen(filepath).read()
 
     def get_text(self, filepath, encoding='utf-8'):
         value_buf = urlopen(filepath).read()
@@ -846,13 +839,12 @@ class FileClient:
         uri = str(uri)
         if '://' not in uri:
             return None
-        else:
-            prefix, _ = uri.split('://')
-            # In the case of PetrelBackend, the prefix may contains the cluster
-            # name like clusterName:s3
-            if ':' in prefix:
-                _, prefix = prefix.split(':')
-            return prefix
+        prefix, _ = uri.split('://')
+        # In the case of PetrelBackend, the prefix may contains the cluster
+        # name like clusterName:s3
+        if ':' in prefix:
+            _, prefix = prefix.split(':')
+        return prefix
 
     @classmethod
     def infer_client(cls,
@@ -876,11 +868,10 @@ class FileClient:
             FileClient: Instantiated FileClient object.
         """
         assert file_client_args is not None or uri is not None
-        if file_client_args is None:
-            file_prefix = cls.parse_uri_prefix(uri)  # type: ignore
-            return cls(prefix=file_prefix)
-        else:
+        if file_client_args is not None:
             return cls(**file_client_args)
+        file_prefix = cls.parse_uri_prefix(uri)  # type: ignore
+        return cls(prefix=file_prefix)
 
     @classmethod
     def _register_backend(cls, name, backend, force=False, prefixes=None):
@@ -898,7 +889,7 @@ class FileClient:
                 f'{name} is already registered as a storage backend, '
                 'add "force=True" if you want to override it')
 
-        if name in cls._backends and force:
+        if name in cls._backends:
             cls._overridden_backends.add(name)
         cls._backends[name] = backend
 
@@ -910,7 +901,7 @@ class FileClient:
             for prefix in prefixes:
                 if prefix not in cls._prefix_to_backends:
                     cls._prefix_to_backends[prefix] = backend
-                elif (prefix in cls._prefix_to_backends) and force:
+                elif force:
                     cls._overridden_prefixes.add(prefix)
                     cls._prefix_to_backends[prefix] = backend
                 else:

@@ -62,17 +62,16 @@ def build_dataset(cfg, default_args=None):
     """Build datasets."""
     from .dataset_wrappers import ConcatDataset, RepeatDataset
     if isinstance(cfg, (list, tuple)):
-        dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+        return ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'RepeatDataset':
-        dataset = RepeatDataset(
-            build_dataset(cfg['dataset'], default_args), cfg['times'])
+        return RepeatDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['times']
+        )
     elif isinstance(cfg.get('img_dir'), (list, tuple)) or isinstance(
             cfg.get('split', None), (list, tuple)):
-        dataset = _concat_dataset(cfg, default_args)
+        return _concat_dataset(cfg, default_args)
     else:
-        dataset = build_from_cfg(cfg, DATASETS, default_args)
-
-    return dataset
+        return build_from_cfg(cfg, DATASETS, default_args)
 
 
 def build_dataloader(dataset,
@@ -132,12 +131,12 @@ def build_dataloader(dataset,
         'DataLoader',
         'PoolDataLoader'), f'unsupported dataloader {dataloader_type}'
 
-    if dataloader_type == 'PoolDataLoader':
-        dataloader = PoolDataLoader
-    elif dataloader_type == 'DataLoader':
+    if dataloader_type == 'DataLoader':
         dataloader = DataLoader
 
-    data_loader = dataloader(
+    elif dataloader_type == 'PoolDataLoader':
+        dataloader = PoolDataLoader
+    return dataloader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
@@ -147,9 +146,8 @@ def build_dataloader(dataset,
         shuffle=shuffle,
         worker_init_fn=init_fn,
         drop_last=drop_last,
-        **kwargs)
-
-    return data_loader
+        **kwargs
+    )
 
 
 def worker_init_fn(worker_id, num_workers, rank, seed):

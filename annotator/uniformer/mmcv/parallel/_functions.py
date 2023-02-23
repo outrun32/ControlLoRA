@@ -10,11 +10,14 @@ def scatter(input, devices, streams=None):
 
     if isinstance(input, list):
         chunk_size = (len(input) - 1) // len(devices) + 1
-        outputs = [
-            scatter(input[i], [devices[i // chunk_size]],
-                    [streams[i // chunk_size]]) for i in range(len(input))
+        return [
+            scatter(
+                input[i],
+                [devices[i // chunk_size]],
+                [streams[i // chunk_size]],
+            )
+            for i in range(len(input))
         ]
-        return outputs
     elif isinstance(input, torch.Tensor):
         output = input.contiguous()
         # TODO: copy to a pinned buffer first (if copying from CPU)

@@ -85,8 +85,7 @@ class MultiScaleFlipAug(object):
         if not self.flip and self.flip_direction != ['horizontal']:
             warnings.warn(
                 'flip_direction has no effect when flip is set to False')
-        if (self.flip
-                and not any([t['type'] == 'RandomFlip' for t in transforms])):
+        if self.flip and all(t['type'] != 'RandomFlip' for t in transforms):
             warnings.warn(
                 'flip has no effect when RandomFlip is not in transforms')
 

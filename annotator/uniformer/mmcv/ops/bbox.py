@@ -48,12 +48,12 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', aligned=False, offset=0):
     """
 
     mode_dict = {'iou': 0, 'iof': 1}
-    assert mode in mode_dict.keys()
+    assert mode in mode_dict
     mode_flag = mode_dict[mode]
     # Either the boxes are empty or the length of boxes' last dimension is 4
     assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
     assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
-    assert offset == 1 or offset == 0
+    assert offset in [1, 0]
 
     rows = bboxes1.size(0)
     cols = bboxes2.size(0)
@@ -63,10 +63,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', aligned=False, offset=0):
     if rows * cols == 0:
         return bboxes1.new(rows, 1) if aligned else bboxes1.new(rows, cols)
 
-    if aligned:
-        ious = bboxes1.new_zeros(rows)
-    else:
-        ious = bboxes1.new_zeros((rows, cols))
+    ious = bboxes1.new_zeros(rows) if aligned else bboxes1.new_zeros((rows, cols))
     ext_module.bbox_overlaps(
         bboxes1, bboxes2, ious, mode=mode_flag, aligned=aligned, offset=offset)
     return ious

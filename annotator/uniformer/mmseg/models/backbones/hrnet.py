@@ -70,8 +70,8 @@ class HRModule(nn.Module):
         """Build one branch."""
         downsample = None
         if stride != 1 or \
-                self.in_channels[branch_index] != \
-                num_channels[branch_index] * block.expansion:
+                    self.in_channels[branch_index] != \
+                    num_channels[branch_index] * block.expansion:
             downsample = nn.Sequential(
                 build_conv_layer(
                     self.conv_cfg,
@@ -83,8 +83,7 @@ class HRModule(nn.Module):
                 build_norm_layer(self.norm_cfg, num_channels[branch_index] *
                                  block.expansion)[1])
 
-        layers = []
-        layers.append(
+        layers = [
             block(
                 self.in_channels[branch_index],
                 num_channels[branch_index],
@@ -92,28 +91,29 @@ class HRModule(nn.Module):
                 downsample=downsample,
                 with_cp=self.with_cp,
                 norm_cfg=self.norm_cfg,
-                conv_cfg=self.conv_cfg))
+                conv_cfg=self.conv_cfg,
+            )
+        ]
         self.in_channels[branch_index] = \
-            num_channels[branch_index] * block.expansion
-        for i in range(1, num_blocks[branch_index]):
-            layers.append(
-                block(
-                    self.in_channels[branch_index],
-                    num_channels[branch_index],
-                    with_cp=self.with_cp,
-                    norm_cfg=self.norm_cfg,
-                    conv_cfg=self.conv_cfg))
-
+                num_channels[branch_index] * block.expansion
+        layers.extend(
+            block(
+                self.in_channels[branch_index],
+                num_channels[branch_index],
+                with_cp=self.with_cp,
+                norm_cfg=self.norm_cfg,
+                conv_cfg=self.conv_cfg,
+            )
+            for _ in range(1, num_blocks[branch_index])
+        )
         return nn.Sequential(*layers)
 
     def _make_branches(self, num_branches, block, num_blocks, num_channels):
         """Build multiple branch."""
-        branches = []
-
-        for i in range(num_branches):
-            branches.append(
-                self._make_one_branch(i, block, num_blocks, num_channels))
-
+        branches = [
+            self._make_one_branch(i, block, num_blocks, num_channels)
+            for i in range(num_branches)
+        ]
         return nn.ModuleList(branches)
 
     def _make_fuse_layers(self):
@@ -429,8 +429,7 @@ class HRNet(nn.Module):
                     bias=False),
                 build_norm_layer(self.norm_cfg, planes * block.expansion)[1])
 
-        layers = []
-        layers.append(
+        layers = [
             block(
                 inplanes,
                 planes,
@@ -438,17 +437,20 @@ class HRNet(nn.Module):
                 downsample=downsample,
                 with_cp=self.with_cp,
                 norm_cfg=self.norm_cfg,
-                conv_cfg=self.conv_cfg))
+                conv_cfg=self.conv_cfg,
+            )
+        ]
         inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(
-                block(
-                    inplanes,
-                    planes,
-                    with_cp=self.with_cp,
-                    norm_cfg=self.norm_cfg,
-                    conv_cfg=self.conv_cfg))
-
+        layers.extend(
+            block(
+                inplanes,
+                planes,
+                with_cp=self.with_cp,
+                norm_cfg=self.norm_cfg,
+                conv_cfg=self.conv_cfg,
+            )
+            for _ in range(1, blocks)
+        )
         return nn.Sequential(*layers)
 
     def _make_stage(self, layer_config, in_channels, multiscale_output=True):
@@ -462,11 +464,7 @@ class HRNet(nn.Module):
         hr_modules = []
         for i in range(num_modules):
             # multi_scale_output is only used for the last module
-            if not multiscale_output and i == num_modules - 1:
-                reset_multiscale_output = False
-            else:
-                reset_multiscale_output = True
-
+            reset_multiscale_output = bool(multiscale_output or i != num_modules - 1)
             hr_modules.append(
                 HRModule(
                     num_branches,

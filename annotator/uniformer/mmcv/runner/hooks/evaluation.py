@@ -174,26 +174,25 @@ class EvalHook(Hook):
             raise KeyError(f'rule must be greater, less or None, '
                            f'but got {rule}.')
 
-        if rule is None:
-            if key_indicator != 'auto':
-                # `_lc` here means we use the lower case of keys for
-                # case-insensitive matching
-                key_indicator_lc = key_indicator.lower()
-                greater_keys = [key.lower() for key in self.greater_keys]
-                less_keys = [key.lower() for key in self.less_keys]
+        if rule is None and key_indicator != 'auto':
+            # `_lc` here means we use the lower case of keys for
+            # case-insensitive matching
+            key_indicator_lc = key_indicator.lower()
+            greater_keys = [key.lower() for key in self.greater_keys]
+            less_keys = [key.lower() for key in self.less_keys]
 
-                if key_indicator_lc in greater_keys:
-                    rule = 'greater'
-                elif key_indicator_lc in less_keys:
-                    rule = 'less'
-                elif any(key in key_indicator_lc for key in greater_keys):
-                    rule = 'greater'
-                elif any(key in key_indicator_lc for key in less_keys):
-                    rule = 'less'
-                else:
-                    raise ValueError(f'Cannot infer the rule for key '
-                                     f'{key_indicator}, thus a specific rule '
-                                     f'must be specified.')
+            if key_indicator_lc in greater_keys:
+                rule = 'greater'
+            elif key_indicator_lc in less_keys:
+                rule = 'less'
+            elif any(key in key_indicator_lc for key in greater_keys):
+                rule = 'greater'
+            elif any(key in key_indicator_lc for key in less_keys):
+                rule = 'less'
+            else:
+                raise ValueError(f'Cannot infer the rule for key '
+                                 f'{key_indicator}, thus a specific rule '
+                                 f'must be specified.')
         self.rule = rule
         self.key_indicator = key_indicator
         if self.rule is not None:
@@ -220,8 +219,8 @@ class EvalHook(Hook):
         if self.save_best is not None:
             if runner.meta is None:
                 warnings.warn('runner.meta is None. Creating an empty one.')
-                runner.meta = dict()
-            runner.meta.setdefault('hook_msgs', dict())
+                runner.meta = {}
+            runner.meta.setdefault('hook_msgs', {})
             self.best_ckpt_path = runner.meta['hook_msgs'].get(
                 'best_ckpt', None)
 

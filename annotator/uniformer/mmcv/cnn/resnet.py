@@ -160,8 +160,7 @@ def make_res_layer(block,
             nn.BatchNorm2d(planes * block.expansion),
         )
 
-    layers = []
-    layers.append(
+    layers = [
         block(
             inplanes,
             planes,
@@ -169,12 +168,14 @@ def make_res_layer(block,
             dilation,
             downsample,
             style=style,
-            with_cp=with_cp))
+            with_cp=with_cp,
+        )
+    ]
     inplanes = planes * block.expansion
-    for _ in range(1, blocks):
-        layers.append(
-            block(inplanes, planes, 1, dilation, style=style, with_cp=with_cp))
-
+    layers.extend(
+        block(inplanes, planes, 1, dilation, style=style, with_cp=with_cp)
+        for _ in range(1, blocks)
+    )
     return nn.Sequential(*layers)
 
 
@@ -287,10 +288,7 @@ class ResNet(nn.Module):
             x = res_layer(x)
             if i in self.out_indices:
                 outs.append(x)
-        if len(outs) == 1:
-            return outs[0]
-        else:
-            return tuple(outs)
+        return outs[0] if len(outs) == 1 else tuple(outs)
 
     def train(self, mode=True):
         super(ResNet, self).train(mode)

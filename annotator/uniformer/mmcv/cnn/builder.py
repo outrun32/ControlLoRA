@@ -18,13 +18,12 @@ def build_model_from_cfg(cfg, registry, default_args=None):
     Returns:
         nn.Module: A built nn module.
     """
-    if isinstance(cfg, list):
-        modules = [
-            build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg
-        ]
-        return Sequential(*modules)
-    else:
+    if not isinstance(cfg, list):
         return build_from_cfg(cfg, registry, default_args)
+    modules = [
+        build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg
+    ]
+    return Sequential(*modules)
 
 
 MODELS = Registry('model', build_func=build_model_from_cfg)

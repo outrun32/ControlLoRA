@@ -181,20 +181,17 @@ def imread(img_or_path, flag='color', channel_order='bgr', backend=None):
                                   _jpegflag(flag, channel_order))
                 if img.shape[-1] == 1:
                     img = img[:, :, 0]
-            return img
         elif backend == 'pillow':
             img = Image.open(img_or_path)
             img = _pillow2array(img, flag, channel_order)
-            return img
         elif backend == 'tifffile':
             img = tifffile.imread(img_or_path)
-            return img
         else:
             flag = imread_flags[flag] if is_str(flag) else flag
             img = cv2.imread(img_or_path, flag)
             if flag == IMREAD_COLOR and channel_order == 'rgb':
                 cv2.cvtColor(img, cv2.COLOR_BGR2RGB, img)
-            return img
+        return img
     else:
         raise TypeError('"img" must be a numpy array or a str or '
                         'a pathlib.Path object')
@@ -224,19 +221,18 @@ def imfrombytes(content, flag='color', channel_order='bgr', backend=None):
         img = jpeg.decode(content, _jpegflag(flag, channel_order))
         if img.shape[-1] == 1:
             img = img[:, :, 0]
-        return img
     elif backend == 'pillow':
         buff = io.BytesIO(content)
         img = Image.open(buff)
         img = _pillow2array(img, flag, channel_order)
-        return img
     else:
         img_np = np.frombuffer(content, np.uint8)
         flag = imread_flags[flag] if is_str(flag) else flag
         img = cv2.imdecode(img_np, flag)
         if flag == IMREAD_COLOR and channel_order == 'rgb':
             cv2.cvtColor(img, cv2.COLOR_BGR2RGB, img)
-        return img
+
+    return img
 
 
 def imwrite(img, file_path, params=None, auto_mkdir=True):

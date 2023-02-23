@@ -107,11 +107,10 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
                 constant_init(self.conv_out.conv, 0)
             else:
                 constant_init(self.conv_out.norm, 0)
+        elif self.conv_out.norm_cfg is None:
+            normal_init(self.conv_out.conv, std=std)
         else:
-            if self.conv_out.norm_cfg is None:
-                normal_init(self.conv_out.conv, std=std)
-            else:
-                normal_init(self.conv_out.norm, std=std)
+            normal_init(self.conv_out.norm, std=std)
 
     def gaussian(self, theta_x, phi_x):
         # NonLocal1d pairwise_weight: [N, H, H]
@@ -206,9 +205,7 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
         y = y.permute(0, 2, 1).contiguous().reshape(n, self.inter_channels,
                                                     *x.size()[2:])
 
-        output = x + self.conv_out(y)
-
-        return output
+        return x + self.conv_out(y)
 
 
 class NonLocal1d(_NonLocalNd):

@@ -35,10 +35,10 @@ def collect_env():
             - MMCV Compiler: The GCC version for compiling MMCV ops.
             - MMCV CUDA Compiler: The CUDA version for compiling MMCV ops.
     """
-    env_info = {}
-    env_info['sys.platform'] = sys.platform
-    env_info['Python'] = sys.version.replace('\n', '')
-
+    env_info = {
+        'sys.platform': sys.platform,
+        'Python': sys.version.replace('\n', ''),
+    }
     cuda_available = torch.cuda.is_available()
     env_info['CUDA available'] = cuda_available
 

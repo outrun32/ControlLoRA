@@ -43,7 +43,7 @@ class PaviLoggerHook(LoggerHook):
         self.run_name = runner.work_dir.split('/')[-1]
 
         if not self.init_kwargs:
-            self.init_kwargs = dict()
+            self.init_kwargs = {}
         self.init_kwargs['name'] = self.run_name
         self.init_kwargs['model'] = runner._model_name
         if runner.meta is not None:
@@ -80,8 +80,7 @@ class PaviLoggerHook(LoggerHook):
 
     @master_only
     def log(self, runner):
-        tags = self.get_loggable_tags(runner, add_mode=False)
-        if tags:
+        if tags := self.get_loggable_tags(runner, add_mode=False):
             self.writer.add_scalars(
                 self.get_mode(runner), tags, self.get_step(runner))
 
@@ -112,6 +111,6 @@ class PaviLoggerHook(LoggerHook):
                 _model = runner.model
             device = next(_model.parameters()).device
             data = next(iter(runner.data_loader))
-            image = data[self.img_key][0:1].to(device)
+            image = data[self.img_key][:1].to(device)
             with torch.no_grad():
                 self.writer.add_graph(_model, image)

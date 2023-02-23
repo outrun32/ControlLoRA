@@ -12,16 +12,15 @@ class MomentumUpdaterHook(Hook):
                  warmup_iters=0,
                  warmup_ratio=0.9):
         # validate the "warmup" argument
-        if warmup is not None:
-            if warmup not in ['constant', 'linear', 'exp']:
-                raise ValueError(
-                    f'"{warmup}" is not a supported type for warming up, valid'
-                    ' types are "constant" and "linear"')
+        if warmup is not None and warmup not in ['constant', 'linear', 'exp']:
+            raise ValueError(
+                f'"{warmup}" is not a supported type for warming up, valid'
+                ' types are "constant" and "linear"')
         if warmup is not None:
             assert warmup_iters > 0, \
-                '"warmup_iters" must be a positive integer'
+                    '"warmup_iters" must be a positive integer'
             assert 0 < warmup_ratio <= 1.0, \
-                '"warmup_momentum" must be in range (0,1]'
+                    '"warmup_momentum" must be in range (0,1]'
 
         self.by_epoch = by_epoch
         self.warmup = warmup
@@ -53,20 +52,19 @@ class MomentumUpdaterHook(Hook):
         raise NotImplementedError
 
     def get_regular_momentum(self, runner):
-        if isinstance(runner.optimizer, dict):
-            momentum_groups = {}
-            for k in runner.optimizer.keys():
-                _momentum_group = [
-                    self.get_momentum(runner, _base_momentum)
-                    for _base_momentum in self.base_momentum[k]
-                ]
-                momentum_groups.update({k: _momentum_group})
-            return momentum_groups
-        else:
+        if not isinstance(runner.optimizer, dict):
             return [
                 self.get_momentum(runner, _base_momentum)
                 for _base_momentum in self.base_momentum
             ]
+        momentum_groups = {}
+        for k in runner.optimizer.keys():
+            _momentum_group = [
+                self.get_momentum(runner, _base_momentum)
+                for _base_momentum in self.base_momentum[k]
+            ]
+            momentum_groups[k] = _momentum_group
+        return momentum_groups
 
     def get_warmup_momentum(self, cur_iters):
 
@@ -113,7 +111,7 @@ class MomentumUpdaterHook(Hook):
                 _base_momentum = [
                     group['initial_momentum'] for group in optim.param_groups
                 ]
-                self.base_momentum.update({k: _base_momentum})
+                self.base_momentum[k] = _base_momentum
         else:
             for group in runner.optimizer.param_groups:
                 if 'momentum' in group.keys():
@@ -140,14 +138,13 @@ class MomentumUpdaterHook(Hook):
             else:
                 warmup_momentum = self.get_warmup_momentum(cur_iter)
                 self._set_momentum(runner, warmup_momentum)
-        elif self.by_epoch:
-            if self.warmup is None or cur_iter > self.warmup_iters:
-                return
-            elif cur_iter == self.warmup_iters:
-                self._set_momentum(runner, self.regular_mom)
-            else:
-                warmup_momentum = self.get_warmup_momentum(cur_iter)
-                self._set_momentum(runner, warmup_momentum)
+        elif self.warmup is None or cur_iter > self.warmup_iters:
+            return
+        elif cur_iter == self.warmup_iters:
+            self._set_momentum(runner, self.regular_mom)
+        else:
+            warmup_momentum = self.get_warmup_momentum(cur_iter)
+            self._set_momentum(runner, warmup_momentum)
 
 
 @HOOKS.register_module()
@@ -168,7 +165,7 @@ class StepMomentumUpdaterHook(MomentumUpdaterHook):
     def __init__(self, step, gamma=0.5, min_momentum=None, **kwargs):
         if isinstance(step, list):
             assert mmcv.is_list_of(step, int)
-            assert all([s > 0 for s in step])
+            assert all(s > 0 for s in step)
         elif isinstance(step, int):
             assert step > 0
         else:
@@ -185,12 +182,10 @@ class StepMomentumUpdaterHook(MomentumUpdaterHook):
         if isinstance(self.step, int):
             exp = progress // self.step
         else:
-            exp = len(self.step)
-            for i, s in enumerate(self.step):
-                if progress < s:
-                    exp = i
-                    break
-
+            exp = next(
+                (i for i, s in enumerate(self.step) if progress < s),
+                len(self.step),
+            )
         momentum = base_momentum * (self.gamma**exp)
         if self.min_momentum is not None:
             # clip to a minimum value
@@ -484,10 +479,11 @@ class OneCycleMomentumUpdaterHook(MomentumUpdaterHook):
                     self.get_momentum(runner, param_group)
                     for param_group in optim.param_groups
                 ]
-                momentum_groups.update({k: _momentum_group})
-            return momentum_groups
+                momentum_groups[k] = _momentum_group
         else:
-            momentum_groups = []
-            for param_group in runner.optimizer.param_groups:
-                momentum_groups.append(self.get_momentum(runner, param_group))
-            return momentum_groups
+            momentum_groups = [
+                self.get_momentum(runner, param_group)
+                for param_group in runner.optimizer.param_groups
+            ]
+
+        return momentum_groups

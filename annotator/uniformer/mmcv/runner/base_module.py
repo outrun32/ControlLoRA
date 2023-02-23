@@ -78,8 +78,8 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
             for name, param in self.named_parameters():
                 self._params_init_info[param][
                     'init_info'] = f'The value is the same before and ' \
-                                   f'after calling `init_weights` ' \
-                                   f'of {self.__class__.__name__} '
+                                       f'after calling `init_weights` ' \
+                                       f'of {self.__class__.__name__} '
                 self._params_init_info[param][
                     'tmp_mean_value'] = param.data.mean()
 
@@ -104,13 +104,11 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
                     f'initialize {module_name} with init_cfg {self.init_cfg}',
                     logger=logger_name)
                 initialize(self, self.init_cfg)
-                if isinstance(self.init_cfg, dict):
-                    # prevent the parameters of
-                    # the pre-trained model
-                    # from being overwritten by
-                    # the `init_weights`
-                    if self.init_cfg['type'] == 'Pretrained':
-                        return
+                if (
+                    isinstance(self.init_cfg, dict)
+                    and self.init_cfg['type'] == 'Pretrained'
+                ):
+                    return
 
             for m in self.children():
                 if hasattr(m, 'init_weights'):

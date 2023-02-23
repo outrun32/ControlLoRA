@@ -60,7 +60,7 @@ class ToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(keys={self.keys})'
+        return f'{self.__class__.__name__}(keys={self.keys})'
 
 
 @PIPELINES.register_module()
@@ -98,7 +98,7 @@ class ImageToTensor(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(keys={self.keys})'
+        return f'{self.__class__.__name__}(keys={self.keys})'
 
 
 @PIPELINES.register_module()
@@ -171,7 +171,7 @@ class ToDataContainer(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(fields={self.fields})'
+        return f'{self.__class__.__name__}(fields={self.fields})'
 
 
 @PIPELINES.register_module()
@@ -274,11 +274,8 @@ class Collect(object):
                 - ``img_metas``
         """
 
-        data = {}
-        img_meta = {}
-        for key in self.meta_keys:
-            img_meta[key] = results[key]
-        data['img_metas'] = DC(img_meta, cpu_only=True)
+        img_meta = {key: results[key] for key in self.meta_keys}
+        data = {'img_metas': DC(img_meta, cpu_only=True)}
         for key in self.keys:
             data[key] = results[key]
         return data

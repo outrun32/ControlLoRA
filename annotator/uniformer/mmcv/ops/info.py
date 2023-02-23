@@ -8,7 +8,7 @@ if torch.__version__ == 'parrots':
     import parrots
 
     def get_compiler_version():
-        return 'GCC ' + parrots.version.compiler
+        return f'GCC {parrots.version.compiler}'
 
     def get_compiling_cuda_version():
         return parrots.version.cuda
@@ -30,7 +30,4 @@ def get_onnxruntime_op_path():
         '_ext_ort.*.so')
 
     paths = glob.glob(wildcard)
-    if len(paths) > 0:
-        return paths[0]
-    else:
-        return ''
+    return paths[0] if len(paths) > 0 else ''

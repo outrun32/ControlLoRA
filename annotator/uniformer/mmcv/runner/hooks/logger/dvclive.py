@@ -52,7 +52,6 @@ class DvcliveLoggerHook(LoggerHook):
 
     @master_only
     def log(self, runner):
-        tags = self.get_loggable_tags(runner)
-        if tags:
+        if tags := self.get_loggable_tags(runner):
             for k, v in tags.items():
                 self.dvclive.log(k, v, step=self.get_iter(runner))

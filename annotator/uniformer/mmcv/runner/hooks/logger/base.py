@@ -57,12 +57,9 @@ class LoggerHook(Hook):
             return False
 
     def get_mode(self, runner):
-        if runner.mode == 'train':
-            if 'time' in runner.log_buffer.output:
-                mode = 'train'
-            else:
-                mode = 'val'
-        elif runner.mode == 'val':
+        if runner.mode == 'train' and 'time' in runner.log_buffer.output:
+            mode = 'train'
+        elif runner.mode in ['train', 'val']:
             mode = 'val'
         else:
             raise ValueError(f"runner mode should be 'train' or 'val', "
@@ -83,11 +80,11 @@ class LoggerHook(Hook):
 
     def get_iter(self, runner, inner_iter=False):
         """Get the current training iteration step."""
-        if self.by_epoch and inner_iter:
-            current_iter = runner.inner_iter + 1
-        else:
-            current_iter = runner.iter + 1
-        return current_iter
+        return (
+            runner.inner_iter + 1
+            if self.by_epoch and inner_iter
+            else runner.iter + 1
+        )
 
     def get_lr_tags(self, runner):
         tags = {}
@@ -126,7 +123,7 @@ class LoggerHook(Hook):
             if add_mode:
                 var = f'{self.get_mode(runner)}/{var}'
             tags[var] = val
-        tags.update(self.get_lr_tags(runner))
+        tags |= self.get_lr_tags(runner)
         tags.update(self.get_momentum_tags(runner))
         return tags
 

@@ -25,9 +25,9 @@ class OptimizerHook(Hook):
         self.grad_clip = grad_clip
 
     def clip_grads(self, params):
-        params = list(
-            filter(lambda p: p.requires_grad and p.grad is not None, params))
-        if len(params) > 0:
+        if params := list(
+            filter(lambda p: p.requires_grad and p.grad is not None, params)
+        ):
             return clip_grad.clip_grad_norm_(params, **self.grad_clip)
 
     def after_train_iter(self, runner):
@@ -76,10 +76,7 @@ class GradientCumulativeOptimizerHook(OptimizerHook):
     def has_batch_norm(self, module):
         if isinstance(module, _BatchNorm):
             return True
-        for m in module.children():
-            if self.has_batch_norm(m):
-                return True
-        return False
+        return any(self.has_batch_norm(m) for m in module.children())
 
     def _init(self, runner):
         if runner.iter % self.cumulative_iters != 0:
@@ -347,13 +344,12 @@ else:
             runner.optimizer.param_groups = copy.deepcopy(
                 runner.optimizer.param_groups)
             state = defaultdict(dict)
-            p_map = {
-                old_p: p
-                for old_p, p in zip(
+            p_map = dict(
+                zip(
                     chain(*(g['params'] for g in old_groups)),
-                    chain(*(g['params']
-                            for g in runner.optimizer.param_groups)))
-            }
+                    chain(*(g['params'] for g in runner.optimizer.param_groups)),
+                )
+            )
             for k, v in runner.optimizer.state.items():
                 state[p_map[k]] = v
             runner.optimizer.state = state

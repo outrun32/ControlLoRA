@@ -101,17 +101,17 @@ class LoRACrossAttnProcessor(nn.Module):
         self.output_states_skipped: bool = output_states_skipped
 
     def skip_key_states(self, is_skipped: bool = True):
-        if is_skipped == False:
+        if not is_skipped:
             assert hasattr(self, 'to_k_lora')
         self.key_states_skipped = is_skipped
 
     def skip_value_states(self, is_skipped: bool = True):
-        if is_skipped == False:
+        if not is_skipped:
             assert hasattr(self, 'to_q_lora')
         self.value_states_skipped = is_skipped
 
     def skip_output_states(self, is_skipped: bool = True):
-        if is_skipped == False:
+        if not is_skipped:
             assert hasattr(self, 'to_out_lora')
         self.output_states_skipped = is_skipped
 
@@ -542,9 +542,7 @@ class ConvBlock2D(nn.Module):
 
         hidden_states = self.nonlinearity(hidden_states)
 
-        output_tensor = self.dropout(hidden_states)
-
-        return output_tensor
+        return self.dropout(hidden_states)
 
 
 class SimpleDownEncoderBlock2D(nn.Module):
@@ -672,7 +670,7 @@ class ControlLoRA(ModelMixin, ConfigMixin):
             lora_control_cls = ControlLoRACrossAttnProcessorV2
 
         assert lora_block_in_channels[0] == block_out_channels[-1]
-        
+
         if lora_pre_conv_skipped:
             lora_control_channels = lora_block_in_channels
             lora_control_self_add = False
@@ -711,14 +709,17 @@ class ControlLoRA(ModelMixin, ConfigMixin):
             pre_down_blocks.append(pre_down_block)
         self.down_blocks.append(nn.Sequential(*pre_down_blocks))
         self.pre_lora_layers.append(
-            get_down_block(
+            nn.Identity()
+            if lora_pre_conv_skipped
+            else get_down_block(
                 lora_pre_conv_types[0],
                 num_layers=self.lora_pre_conv_layers_per_block,
                 in_channels=lora_block_in_channels[0],
                 out_channels=(
-                    lora_block_out_channels[0] 
-                    if lora_control_channels[0] is None 
-                    else lora_control_channels[0]),
+                    lora_block_out_channels[0]
+                    if lora_control_channels[0] is None
+                    else lora_control_channels[0]
+                ),
                 add_downsample=False,
                 resnet_eps=1e-6,
                 downsample_padding=0,
@@ -727,7 +728,7 @@ class ControlLoRA(ModelMixin, ConfigMixin):
                 attn_num_head_channels=None,
                 temb_channels=None,
                 resnet_kernel_size=lora_pre_conv_layers_kernel_size,
-            ) if not lora_pre_conv_skipped else nn.Identity()
+            )
         )
         self.lora_layers.append(
             nn.ModuleList([
@@ -746,7 +747,7 @@ class ControlLoRA(ModelMixin, ConfigMixin):
                 for cross_attention_dim in lora_cross_attention_dims[0]
             ])
         )
-        
+
         # down
         output_channel = lora_block_in_channels[0]
         for i, down_block_type in enumerate(lora_pre_down_block_types):
@@ -771,14 +772,17 @@ class ControlLoRA(ModelMixin, ConfigMixin):
             self.down_blocks.append(down_block)
 
             self.pre_lora_layers.append(
-                get_down_block(
+                nn.Identity()
+                if lora_pre_conv_skipped
+                else get_down_block(
                     lora_pre_conv_types[i],
                     num_layers=self.lora_pre_conv_layers_per_block,
                     in_channels=output_channel,
                     out_channels=(
-                        lora_block_out_channels[i] 
-                        if lora_control_channels[i] is None 
-                        else lora_control_channels[i]),
+                        lora_block_out_channels[i]
+                        if lora_control_channels[i] is None
+                        else lora_control_channels[i]
+                    ),
                     add_downsample=False,
                     resnet_eps=1e-6,
                     downsample_padding=0,
@@ -787,7 +791,7 @@ class ControlLoRA(ModelMixin, ConfigMixin):
                     attn_num_head_channels=None,
                     temb_channels=None,
                     resnet_kernel_size=lora_pre_conv_layers_kernel_size,
-                ) if not lora_pre_conv_skipped else nn.Identity()
+                )
             )
             self.lora_layers.append(
                 nn.ModuleList([
@@ -809,7 +813,7 @@ class ControlLoRA(ModelMixin, ConfigMixin):
 
     def forward(self, x: torch.FloatTensor, return_dict: bool = True) -> Union[ControlLoRAOutput, Tuple]:
         lora_layer: ControlLoRACrossAttnProcessor
-        
+
         orig_dtype = x.dtype
         dtype = self.conv_in.weight.dtype
 
@@ -829,7 +833,8 @@ class ControlLoRA(ModelMixin, ConfigMixin):
                 lora_layer.inject_control_states(control_states)
             control_states_list.append(control_states)
 
-        if not return_dict:
-            return tuple(control_states_list)
-
-        return ControlLoRAOutput(control_states=tuple(control_states_list))
+        return (
+            ControlLoRAOutput(control_states=tuple(control_states_list))
+            if return_dict
+            else tuple(control_states_list)
+        )

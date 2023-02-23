@@ -127,7 +127,7 @@ class CheckpointHook(Hook):
             else:
                 cur_ckpt_filename = self.args.get(
                     'filename_tmpl', 'iter_{}.pth').format(runner.iter + 1)
-            runner.meta.setdefault('hook_msgs', dict())
+            runner.meta.setdefault('hook_msgs', {})
             runner.meta['hook_msgs']['last_ckpt'] = self.file_client.join_path(
                 self.out_dir, cur_ckpt_filename)
         # remove other checkpoints

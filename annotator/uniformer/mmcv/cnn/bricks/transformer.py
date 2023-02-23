@@ -165,14 +165,13 @@ class MultiheadAttention(BaseModule):
             value = key
         if identity is None:
             identity = query
-        if key_pos is None:
-            if query_pos is not None:
-                # use query_pos if key_pos is not available
-                if query_pos.shape == key.shape:
-                    key_pos = query_pos
-                else:
-                    warnings.warn(f'position encoding of key is'
-                                  f'missing in {self.__class__.__name__}.')
+        if key_pos is None and query_pos is not None:
+            # use query_pos if key_pos is not available
+            if query_pos.shape == key.shape:
+                key_pos = query_pos
+            else:
+                warnings.warn(f'position encoding of key is'
+                              f'missing in {self.__class__.__name__}.')
         if query_pos is not None:
             query = query + query_pos
         if key_pos is not None:
@@ -243,7 +242,7 @@ class FFN(BaseModule):
                  **kwargs):
         super(FFN, self).__init__(init_cfg)
         assert num_fcs >= 2, 'num_fcs should be no less ' \
-            f'than 2. got {num_fcs}.'
+                f'than 2. got {num_fcs}.'
         self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
         self.num_fcs = num_fcs
@@ -258,8 +257,7 @@ class FFN(BaseModule):
                     Linear(in_channels, feedforward_channels), self.activate,
                     nn.Dropout(ffn_drop)))
             in_channels = feedforward_channels
-        layers.append(Linear(feedforward_channels, embed_dims))
-        layers.append(nn.Dropout(ffn_drop))
+        layers.extend((Linear(feedforward_channels, embed_dims), nn.Dropout(ffn_drop)))
         self.layers = Sequential(*layers)
         self.dropout_layer = build_dropout(
             dropout_layer) if dropout_layer else torch.nn.Identity()
@@ -349,12 +347,11 @@ class BaseTransformerLayer(BaseModule):
 
         self.batch_first = batch_first
 
-        assert set(operation_order) & set(
-            ['self_attn', 'norm', 'ffn', 'cross_attn']) == \
-            set(operation_order), f'The operation_order of' \
-            f' {self.__class__.__name__} should ' \
-            f'contains all four operation type ' \
-            f"{['self_attn', 'norm', 'ffn', 'cross_attn']}"
+        assert (
+            set(operation_order) & {'self_attn', 'norm', 'ffn', 'cross_attn'}
+        ) == set(
+            operation_order
+        ), f"The operation_order of {self.__class__.__name__} should contains all four operation type {['self_attn', 'norm', 'ffn', 'cross_attn']}"
 
         num_attn = operation_order.count('self_attn') + operation_order.count(
             'cross_attn')
@@ -362,9 +359,9 @@ class BaseTransformerLayer(BaseModule):
             attn_cfgs = [copy.deepcopy(attn_cfgs) for _ in range(num_attn)]
         else:
             assert num_attn == len(attn_cfgs), f'The length ' \
-                f'of attn_cfg {num_attn} is ' \
-                f'not consistent with the number of attention' \
-                f'in operation_order {operation_order}.'
+                    f'of attn_cfg {num_attn} is ' \
+                    f'not consistent with the number of attention' \
+                    f'in operation_order {operation_order}.'
 
         self.num_attn = num_attn
         self.operation_order = operation_order

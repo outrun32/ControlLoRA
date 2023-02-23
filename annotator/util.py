@@ -12,7 +12,7 @@ def HWC3(x):
         x = x[:, :, None]
     assert x.ndim == 3
     H, W, C = x.shape
-    assert C == 1 or C == 3 or C == 4
+    assert C in [1, 3, 4]
     if C == 3:
         return x
     if C == 1:
@@ -34,5 +34,8 @@ def resize_image(input_image, resolution):
     W *= k
     H = int(np.round(H / 64.0)) * 64
     W = int(np.round(W / 64.0)) * 64
-    img = cv2.resize(input_image, (W, H), interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA)
-    return img
+    return cv2.resize(
+        input_image,
+        (W, H),
+        interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA,
+    )

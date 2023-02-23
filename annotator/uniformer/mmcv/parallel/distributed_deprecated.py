@@ -35,8 +35,7 @@ class MMDistributedDataParallel(nn.Module):
                 tensor.copy_(synced)
 
     def _sync_params(self):
-        module_states = list(self.module.state_dict().values())
-        if len(module_states) > 0:
+        if module_states := list(self.module.state_dict().values()):
             self._dist_broadcast_coalesced(module_states,
                                            self.broadcast_bucket_size)
         if self.broadcast_buffers:
@@ -45,7 +44,7 @@ class MMDistributedDataParallel(nn.Module):
                 buffers = [b.data for b in self.module._all_buffers()]
             else:
                 buffers = [b.data for b in self.module.buffers()]
-            if len(buffers) > 0:
+            if buffers:
                 self._dist_broadcast_coalesced(buffers,
                                                self.broadcast_bucket_size)
 
@@ -60,11 +59,9 @@ class MMDistributedDataParallel(nn.Module):
     def train_step(self, *inputs, **kwargs):
         inputs, kwargs = self.scatter(inputs, kwargs,
                                       [torch.cuda.current_device()])
-        output = self.module.train_step(*inputs[0], **kwargs[0])
-        return output
+        return self.module.train_step(*inputs[0], **kwargs[0])
 
     def val_step(self, *inputs, **kwargs):
         inputs, kwargs = self.scatter(inputs, kwargs,
                                       [torch.cuda.current_device()])
-        output = self.module.val_step(*inputs[0], **kwargs[0])
-        return output
+        return self.module.val_step(*inputs[0], **kwargs[0])

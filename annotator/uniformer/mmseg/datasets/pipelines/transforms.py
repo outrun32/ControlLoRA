@@ -46,10 +46,7 @@ class Resize(object):
         if img_scale is None:
             self.img_scale = None
         else:
-            if isinstance(img_scale, list):
-                self.img_scale = img_scale
-            else:
-                self.img_scale = [img_scale]
+            self.img_scale = img_scale if isinstance(img_scale, list) else [img_scale]
             assert mmcv.is_list_of(self.img_scale, tuple)
 
         if ratio_range is not None:
@@ -269,7 +266,7 @@ class RandomFlip(object):
         """
 
         if 'flip' not in results:
-            flip = True if np.random.rand() < self.prob else False
+            flip = np.random.rand() < self.prob
             results['flip'] = flip
         if 'flip_direction' not in results:
             results['flip_direction'] = self.direction
@@ -286,7 +283,7 @@ class RandomFlip(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(prob={self.prob})'
+        return f'{self.__class__.__name__}(prob={self.prob})'
 
 
 @PIPELINES.register_module()
@@ -414,8 +411,8 @@ class Rerange(object):
     """
 
     def __init__(self, min_value=0, max_value=255):
-        assert isinstance(min_value, float) or isinstance(min_value, int)
-        assert isinstance(max_value, float) or isinstance(max_value, int)
+        assert isinstance(min_value, (float, int))
+        assert isinstance(max_value, (float, int))
         assert min_value < max_value
         self.min_value = min_value
         self.max_value = max_value
@@ -563,7 +560,7 @@ class RandomCrop(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(crop_size={self.crop_size})'
+        return f'{self.__class__.__name__}(crop_size={self.crop_size})'
 
 
 @PIPELINES.register_module()
@@ -616,7 +613,7 @@ class RandomRotate(object):
             dict: Rotated results.
         """
 
-        rotate = True if np.random.rand() < self.prob else False
+        rotate = np.random.rand() < self.prob
         degree = np.random.uniform(min(*self.degree), max(*self.degree))
         if rotate:
             # rotate image
@@ -714,7 +711,7 @@ class AdjustGamma(object):
     """
 
     def __init__(self, gamma=1.0):
-        assert isinstance(gamma, float) or isinstance(gamma, int)
+        assert isinstance(gamma, (float, int))
         assert gamma > 0
         self.gamma = gamma
         inv_gamma = 1.0 / gamma
@@ -737,7 +734,7 @@ class AdjustGamma(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(gamma={self.gamma})'
+        return f'{self.__class__.__name__}(gamma={self.gamma})'
 
 
 @PIPELINES.register_module()
@@ -767,7 +764,7 @@ class SegRescale(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
+        return f'{self.__class__.__name__}(scale_factor={self.scale_factor})'
 
 
 @PIPELINES.register_module()

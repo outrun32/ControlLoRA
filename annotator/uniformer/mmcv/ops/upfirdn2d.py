@@ -270,8 +270,18 @@ def upfirdn2d(input, kernel, up=1, down=1, pad=(0, 0)):
 
         down = to_2tuple(down)
 
-        out = upfirdn2d_native(input, kernel, up[0], up[1], down[0], down[1],
-                               pad[0], pad[1], pad[2], pad[3])
+        return upfirdn2d_native(
+            input,
+            kernel,
+            up[0],
+            up[1],
+            down[0],
+            down[1],
+            pad[0],
+            pad[1],
+            pad[2],
+            pad[3],
+        )
     else:
         _up = to_2tuple(up)
 
@@ -282,9 +292,7 @@ def upfirdn2d(input, kernel, up=1, down=1, pad=(0, 0)):
         elif len(pad) == 2:
             _pad = (pad[0], pad[1], pad[0], pad[1])
 
-        out = UpFirDn2d.apply(input, kernel, _up, _down, _pad)
-
-    return out
+        return UpFirDn2d.apply(input, kernel, _up, _down, _pad)
 
 
 def upfirdn2d_native(input, kernel, up_x, up_y, down_x, down_y, pad_x0, pad_x1,

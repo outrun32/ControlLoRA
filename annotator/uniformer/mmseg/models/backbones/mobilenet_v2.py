@@ -60,7 +60,7 @@ class MobileNetV2(nn.Module):
         assert len(strides) == len(dilations) == len(self.arch_settings)
         self.out_indices = out_indices
         for index in out_indices:
-            if index not in range(0, 7):
+            if index not in range(7):
                 raise ValueError('the item in out_indices must in '
                                  f'range(0, 8). But received {index}')
 
@@ -156,10 +156,7 @@ class MobileNetV2(nn.Module):
             if i in self.out_indices:
                 outs.append(x)
 
-        if len(outs) == 1:
-            return outs[0]
-        else:
-            return tuple(outs)
+        return outs[0] if len(outs) == 1 else tuple(outs)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:

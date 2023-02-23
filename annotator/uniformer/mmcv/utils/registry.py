@@ -19,11 +19,12 @@ def build_from_cfg(cfg, registry, default_args=None):
     """
     if not isinstance(cfg, dict):
         raise TypeError(f'cfg must be a dict, but got {type(cfg)}')
-    if 'type' not in cfg:
-        if default_args is None or 'type' not in default_args:
-            raise KeyError(
-                '`cfg` or `default_args` must contain the key "type", '
-                f'but got {cfg}\n{default_args}')
+    if 'type' not in cfg and (
+        default_args is None or 'type' not in default_args
+    ):
+        raise KeyError(
+            '`cfg` or `default_args` must contain the key "type", '
+            f'but got {cfg}\n{default_args}')
     if not isinstance(registry, Registry):
         raise TypeError('registry must be an mmcv.Registry object, '
                         f'but got {type(registry)}')
@@ -87,8 +88,8 @@ class Registry:
 
     def __init__(self, name, build_func=None, parent=None, scope=None):
         self._name = name
-        self._module_dict = dict()
-        self._children = dict()
+        self._module_dict = {}
+        self._children = {}
         self._scope = self.infer_scope() if scope is None else scope
 
         # self.build_func will be set with the following priority:
@@ -96,10 +97,7 @@ class Registry:
         # 2. parent.build_func
         # 3. build_from_cfg
         if build_func is None:
-            if parent is not None:
-                self.build_func = parent.build_func
-            else:
-                self.build_func = build_from_cfg
+            self.build_func = parent.build_func if parent is not None else build_from_cfg
         else:
             self.build_func = build_func
         if parent is not None:
@@ -116,10 +114,7 @@ class Registry:
         return self.get(key) is not None
 
     def __repr__(self):
-        format_str = self.__class__.__name__ + \
-                     f'(name={self._name}, ' \
-                     f'items={self._module_dict})'
-        return format_str
+        return f'{self.__class__.__name__}(name={self._name}, items={self._module_dict})'
 
     @staticmethod
     def infer_scope():
@@ -198,15 +193,13 @@ class Registry:
             if real_key in self._module_dict:
                 return self._module_dict[real_key]
         else:
-            # get from self._children
             if scope in self._children:
                 return self._children[scope].get(real_key)
-            else:
-                # goto root
-                parent = self.parent
-                while parent.parent is not None:
-                    parent = parent.parent
-                return parent.get(key)
+            # goto root
+            parent = self.parent
+            while parent.parent is not None:
+                parent = parent.parent
+            return parent.get(key)
 
     def build(self, *args, **kwargs):
         return self.build_func(*args, **kwargs, registry=self)

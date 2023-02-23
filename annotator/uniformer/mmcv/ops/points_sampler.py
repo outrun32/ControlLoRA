@@ -113,7 +113,7 @@ class PointsSampler(nn.Module):
                     sample_features = None
             else:
                 sample_points_xyz = \
-                    points_xyz[:, last_fps_end_index:fps_sample_range]
+                        points_xyz[:, last_fps_end_index:fps_sample_range]
                 if features is not None:
                     sample_features = features[:, :, last_fps_end_index:
                                                fps_sample_range]
@@ -125,9 +125,7 @@ class PointsSampler(nn.Module):
 
             indices.append(fps_idx + last_fps_end_index)
             last_fps_end_index += fps_sample_range
-        indices = torch.cat(indices, dim=1)
-
-        return indices
+        return torch.cat(indices, dim=1)
 
 
 class DFPSSampler(nn.Module):
@@ -138,8 +136,7 @@ class DFPSSampler(nn.Module):
 
     def forward(self, points, features, npoint):
         """Sampling points with D-FPS."""
-        fps_idx = furthest_point_sample(points.contiguous(), npoint)
-        return fps_idx
+        return furthest_point_sample(points.contiguous(), npoint)
 
 
 class FFPSSampler(nn.Module):
@@ -151,12 +148,11 @@ class FFPSSampler(nn.Module):
     def forward(self, points, features, npoint):
         """Sampling points with F-FPS."""
         assert features is not None, \
-            'feature input to FFPS_Sampler should not be None'
+                'feature input to FFPS_Sampler should not be None'
         features_for_fps = torch.cat([points, features.transpose(1, 2)], dim=2)
         features_dist = calc_square_dist(
             features_for_fps, features_for_fps, norm=False)
-        fps_idx = furthest_point_sample_with_dist(features_dist, npoint)
-        return fps_idx
+        return furthest_point_sample_with_dist(features_dist, npoint)
 
 
 class FSSampler(nn.Module):
@@ -168,10 +164,9 @@ class FSSampler(nn.Module):
     def forward(self, points, features, npoint):
         """Sampling points with FS_Sampling."""
         assert features is not None, \
-            'feature input to FS_Sampler should not be None'
+                'feature input to FS_Sampler should not be None'
         ffps_sampler = FFPSSampler()
         dfps_sampler = DFPSSampler()
         fps_idx_ffps = ffps_sampler(points, features, npoint)
         fps_idx_dfps = dfps_sampler(points, features, npoint)
-        fps_idx = torch.cat([fps_idx_ffps, fps_idx_dfps], dim=1)
-        return fps_idx
+        return torch.cat([fps_idx_ffps, fps_idx_dfps], dim=1)

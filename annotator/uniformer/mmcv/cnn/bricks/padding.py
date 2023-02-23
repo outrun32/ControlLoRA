@@ -31,6 +31,4 @@ def build_padding_layer(cfg, *args, **kwargs):
     else:
         padding_layer = PADDING_LAYERS.get(padding_type)
 
-    layer = padding_layer(*args, **kwargs, **cfg_)
-
-    return layer
+    return padding_layer(*args, **kwargs, **cfg_)

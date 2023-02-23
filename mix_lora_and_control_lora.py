@@ -28,7 +28,7 @@ def main():
     num_validation_images = 16
     inject_pre_lora = True
     inject_post_lora = False
-    
+
     dataset = load_dataset(dataset_name)
 
     data_transforms = transforms.Compose(
@@ -40,7 +40,7 @@ def main():
     )
 
     torch.manual_seed(0)
-    
+
     def preprocess_train(examples):
         guides = []
         for guide in examples["guide"]:
@@ -57,7 +57,7 @@ def main():
             guides.append(guide)
         examples["guide_values"] = guides
         return examples
-    
+
     def collate_fn(examples):
         guide_values = torch.stack([example["guide_values"] for example in examples])
         guide_values = guide_values.to(memory_format=torch.contiguous_format).float()
@@ -89,11 +89,13 @@ def main():
     control_lora = control_lora.to('cuda')
 
     n_ch = len(unet.config.block_out_channels)
-    control_ids = [i for i in range(n_ch)]
+    control_ids = list(range(n_ch))
 
     # load attention processors
     lora_attn_procs = {}
-    lora_layers_list = list([list(layer_list) for layer_list in control_lora.lora_layers])
+    lora_layers_list = [
+        list(layer_list) for layer_list in control_lora.lora_layers
+    ]
     for name in pipeline.unet.attn_processors.keys():
         cross_attention_dim = None if name.endswith("attn1.processor") else unet.config.cross_attention_dim
         if name.startswith("mid_block"):
@@ -128,10 +130,12 @@ def main():
         subfolder="sd-highcwu_v1-model-lora"
     )
     lora_layers.load_state_dict(torch.load(lora_path))
-    
+
     # load control lora attention processors
     lora_attn_procs = {}
-    lora_layers_list = list([list(layer_list) for layer_list in control_lora.lora_layers])
+    lora_layers_list = [
+        list(layer_list) for layer_list in control_lora.lora_layers
+    ]
     for name in pipeline.unet.attn_processors.keys():
         cross_attention_dim = None if name.endswith("attn1.processor") else unet.config.cross_attention_dim
         if name.startswith("mid_block"):

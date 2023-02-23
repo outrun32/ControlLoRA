@@ -33,8 +33,8 @@ class Hand(object):
         heatmap_avg = np.zeros((oriImg.shape[0], oriImg.shape[1], 22))
         # paf_avg = np.zeros((oriImg.shape[0], oriImg.shape[1], 38))
 
-        for m in range(len(multiplier)):
-            scale = multiplier[m]
+        for item in multiplier:
+            scale = item
             imageToTest = cv2.resize(oriImg, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
             imageToTest_padded, pad = util.padRightDownCorner(imageToTest, stride, padValue)
             im = np.transpose(np.float32(imageToTest_padded[:, :, :, np.newaxis]), (3, 2, 0, 1)) / 256 - 0.5

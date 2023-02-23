@@ -17,9 +17,11 @@ def f_score(precision, recall, beta=1):
     Returns:
         [torch.tensor]: The f-score value.
     """
-    score = (1 + beta**2) * (precision * recall) / (
-        (beta**2 * precision) + recall)
-    return score
+    return (
+        (1 + beta**2)
+        * (precision * recall)
+        / ((beta**2 * precision) + recall)
+    )
 
 
 def intersect_and_union(pred_label,
@@ -157,7 +159,7 @@ def mean_iou(results,
             <Acc> ndarray: Per category accuracy, shape (num_classes, ).
             <IoU> ndarray: Per category IoU, shape (num_classes, ).
     """
-    iou_result = eval_metrics(
+    return eval_metrics(
         results=results,
         gt_seg_maps=gt_seg_maps,
         num_classes=num_classes,
@@ -165,8 +167,8 @@ def mean_iou(results,
         metrics=['mIoU'],
         nan_to_num=nan_to_num,
         label_map=label_map,
-        reduce_zero_label=reduce_zero_label)
-    return iou_result
+        reduce_zero_label=reduce_zero_label,
+    )
 
 
 def mean_dice(results,
@@ -197,7 +199,7 @@ def mean_dice(results,
             <Dice> ndarray: Per category dice, shape (num_classes, ).
     """
 
-    dice_result = eval_metrics(
+    return eval_metrics(
         results=results,
         gt_seg_maps=gt_seg_maps,
         num_classes=num_classes,
@@ -205,8 +207,8 @@ def mean_dice(results,
         metrics=['mDice'],
         nan_to_num=nan_to_num,
         label_map=label_map,
-        reduce_zero_label=reduce_zero_label)
-    return dice_result
+        reduce_zero_label=reduce_zero_label,
+    )
 
 
 def mean_fscore(results,
@@ -241,7 +243,7 @@ def mean_fscore(results,
             <Precision> ndarray: Per category precision, shape (num_classes, ).
             <Recall> ndarray: Per category f-score, shape (num_classes, ).
     """
-    fscore_result = eval_metrics(
+    return eval_metrics(
         results=results,
         gt_seg_maps=gt_seg_maps,
         num_classes=num_classes,
@@ -250,8 +252,8 @@ def mean_fscore(results,
         nan_to_num=nan_to_num,
         label_map=label_map,
         reduce_zero_label=reduce_zero_label,
-        beta=beta)
-    return fscore_result
+        beta=beta,
+    )
 
 
 def eval_metrics(results,
@@ -285,7 +287,7 @@ def eval_metrics(results,
         metrics = [metrics]
     allowed_metrics = ['mIoU', 'mDice', 'mFscore']
     if not set(metrics).issubset(set(allowed_metrics)):
-        raise KeyError('metrics {} is not supported'.format(metrics))
+        raise KeyError(f'metrics {metrics} is not supported')
 
     total_area_intersect, total_area_union, total_area_pred_label, \
         total_area_label = total_intersect_and_union(

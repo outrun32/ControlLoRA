@@ -94,7 +94,7 @@ def load_state_dict(module, state_dict, strict=False, logger=None):
             f'missing keys in source state_dict: {", ".join(missing_keys)}\n')
 
     rank, _ = get_dist_info()
-    if len(err_msg) > 0 and rank == 0:
+    if err_msg and rank == 0:
         err_msg.insert(
             0, 'The model and loaded state dict do not match exactly\n')
         err_msg = '\n'.join(err_msg)
@@ -170,14 +170,14 @@ def load_fileclient_dist(filename, backend, map_location):
 
 
 def get_torchvision_models():
-    model_urls = dict()
+    model_urls = {}
     for _, name, ispkg in pkgutil.walk_packages(torchvision.models.__path__):
         if ispkg:
             continue
         _zoo = import_module(f'torchvision.models.{name}')
         if hasattr(_zoo, 'model_urls'):
             _urls = getattr(_zoo, 'model_urls')
-            model_urls.update(_urls)
+            model_urls |= _urls
     return model_urls
 
 
@@ -197,9 +197,7 @@ def get_external_models():
 
 def get_mmcls_models():
     mmcls_json_path = osp.join(mmcv.__path__[0], 'model_zoo/mmcls.json')
-    mmcls_urls = load_file(mmcls_json_path)
-
-    return mmcls_urls
+    return load_file(mmcls_json_path)
 
 
 def get_deprecated_model_names():
@@ -217,9 +215,7 @@ def _process_mmcls_checkpoint(checkpoint):
     for k, v in state_dict.items():
         if k.startswith('backbone.'):
             new_state_dict[k[9:]] = v
-    new_checkpoint = dict(state_dict=new_state_dict)
-
-    return new_checkpoint
+    return dict(state_dict=new_state_dict)
 
 
 def _load_checkpoint(filename, map_location=None):
@@ -342,14 +338,13 @@ def load_checkpoint(model,
         L2, nH2 = table_current.size()
         if nH1 != nH2:
             logger.warning(f"Error in loading {table_key}, pass")
-        else:
-            if L1 != L2:
-                S1 = int(L1 ** 0.5)
-                S2 = int(L2 ** 0.5)
-                table_pretrained_resized = F.interpolate(
-                     table_pretrained.permute(1, 0).view(1, nH1, S1, S1),
-                     size=(S2, S2), mode='bicubic')
-                state_dict[table_key] = table_pretrained_resized.view(nH2, L2).permute(1, 0)
+        elif L1 != L2:
+            S1 = int(L1 ** 0.5)
+            S2 = int(L2 ** 0.5)
+            table_pretrained_resized = F.interpolate(
+                 table_pretrained.permute(1, 0).view(1, nH1, S1, S1),
+                 size=(S2, S2), mode='bicubic')
+            state_dict[table_key] = table_pretrained_resized.view(nH2, L2).permute(1, 0)
 
     # load state_dict
     load_state_dict(model, state_dict, strict, logger)

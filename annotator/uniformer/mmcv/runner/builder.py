@@ -20,5 +20,4 @@ def build_runner(cfg, default_args=None):
             type=constructor_type,
             runner_cfg=runner_cfg,
             default_args=default_args))
-    runner = runner_constructor()
-    return runner
+    return runner_constructor()

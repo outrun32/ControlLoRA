@@ -80,5 +80,4 @@ def build_upsample_layer(cfg, *args, **kwargs):
 
     if upsample is nn.Upsample:
         cfg_['mode'] = layer_type
-    layer = upsample(*args, **kwargs, **cfg_)
-    return layer
+    return upsample(*args, **kwargs, **cfg_)

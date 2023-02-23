@@ -77,11 +77,11 @@ def resize_video(in_file,
         raise ValueError('size and ratio cannot be specified at the same time')
     options = {'log_level': log_level}
     if size:
-        if not keep_ar:
-            options['vf'] = f'scale={size[0]}:{size[1]}'
-        else:
-            options['vf'] = f'scale=w={size[0]}:h={size[1]}:' \
-                            'force_original_aspect_ratio=decrease'
+        options['vf'] = (
+            f'scale=w={size[0]}:h={size[1]}:force_original_aspect_ratio=decrease'
+            if keep_ar
+            else f'scale={size[0]}:{size[1]}'
+        )
     else:
         if not isinstance(ratio, tuple):
             ratio = (ratio, ratio)

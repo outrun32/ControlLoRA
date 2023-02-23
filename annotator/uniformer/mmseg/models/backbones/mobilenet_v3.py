@@ -81,7 +81,7 @@ class MobileNetV3(nn.Module):
         assert isinstance(reduction_factor, int) and reduction_factor > 0
         assert mmcv.is_tuple_of(out_indices, int)
         for index in out_indices:
-            if index not in range(0, len(self.arch_settings[arch]) + 2):
+            if index not in range(len(self.arch_settings[arch]) + 2):
                 raise ValueError(
                     'the item in out_indices must in '
                     f'range(0, {len(self.arch_settings[arch])+2}). '
@@ -102,8 +102,6 @@ class MobileNetV3(nn.Module):
         self.layers = self._make_layer()
 
     def _make_layer(self):
-        layers = []
-
         # build the first layer (layer0)
         in_channels = 16
         layer = ConvModule(
@@ -116,15 +114,14 @@ class MobileNetV3(nn.Module):
             norm_cfg=self.norm_cfg,
             act_cfg=dict(type='HSwish'))
         self.add_module('layer0', layer)
-        layers.append('layer0')
-
+        layers = ['layer0']
         layer_setting = self.arch_settings[self.arch]
         for i, params in enumerate(layer_setting):
             (kernel_size, mid_channels, out_channels, with_se, act,
              stride) = params
 
             if self.arch == 'large' and i >= 12 or self.arch == 'small' and \
-                    i >= 8:
+                        i >= 8:
                 mid_channels = mid_channels // self.reduction_factor
                 out_channels = out_channels // self.reduction_factor
 
@@ -150,7 +147,7 @@ class MobileNetV3(nn.Module):
                 act_cfg=dict(type=act),
                 with_cp=self.with_cp)
             in_channels = out_channels
-            layer_name = 'layer{}'.format(i + 1)
+            layer_name = f'layer{i + 1}'
             self.add_module(layer_name, layer)
             layers.append(layer_name)
 
@@ -167,7 +164,7 @@ class MobileNetV3(nn.Module):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=dict(type='HSwish'))
-        layer_name = 'layer{}'.format(len(layer_setting) + 1)
+        layer_name = f'layer{len(layer_setting) + 1}'
         self.add_module(layer_name, layer)
         layers.append(layer_name)
 

@@ -247,11 +247,13 @@ def fused_bias_leakyrelu(input, bias, negative_slope=0.2, scale=2**0.5):
         torch.Tensor: Feature map after non-linear activation.
     """
 
-    if not input.is_cuda:
-        return bias_leakyrelu_ref(input, bias, negative_slope, scale)
-
-    return FusedBiasLeakyReLUFunction.apply(input, bias.to(input.dtype),
-                                            negative_slope, scale)
+    return (
+        FusedBiasLeakyReLUFunction.apply(
+            input, bias.to(input.dtype), negative_slope, scale
+        )
+        if input.is_cuda
+        else bias_leakyrelu_ref(input, bias, negative_slope, scale)
+    )
 
 
 def bias_leakyrelu_ref(x, bias, negative_slope=0.2, scale=2**0.5):

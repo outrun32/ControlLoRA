@@ -110,17 +110,14 @@ class EpochBasedRunner(BaseRunner):
         while self.epoch < self._max_epochs:
             for i, flow in enumerate(workflow):
                 mode, epochs = flow
-                if isinstance(mode, str):  # self.train()
-                    if not hasattr(self, mode):
-                        raise ValueError(
-                            f'runner has no method named "{mode}" to run an '
-                            'epoch')
-                    epoch_runner = getattr(self, mode)
-                else:
-                    raise TypeError(
-                        'mode in workflow must be a str, but got {}'.format(
-                            type(mode)))
+                if not isinstance(mode, str):
+                    raise TypeError(f'mode in workflow must be a str, but got {type(mode)}')
 
+                if not hasattr(self, mode):
+                    raise ValueError(
+                        f'runner has no method named "{mode}" to run an '
+                        'epoch')
+                epoch_runner = getattr(self, mode)
                 for _ in range(epochs):
                     if mode == 'train' and self.epoch >= self._max_epochs:
                         break

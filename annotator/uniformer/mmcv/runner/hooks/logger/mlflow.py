@@ -68,8 +68,7 @@ class MlflowLoggerHook(LoggerHook):
 
     @master_only
     def log(self, runner):
-        tags = self.get_loggable_tags(runner)
-        if tags:
+        if tags := self.get_loggable_tags(runner):
             self.mlflow.log_metrics(tags, step=self.get_iter(runner))
 
     @master_only

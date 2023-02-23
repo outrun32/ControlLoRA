@@ -45,10 +45,7 @@ class AlexNet(nn.Module):
             logger = logging.getLogger()
             from ..runner import load_checkpoint
             load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            # use default initializer
-            pass
-        else:
+        elif pretrained is not None:
             raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):

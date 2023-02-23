@@ -174,13 +174,15 @@ def get_shape_from_feature_map(x):
     Returns:
         torch.Tensor: Spatial resolution (width, height), shape (1, 1, 2)
     """
-    if torch.onnx.is_in_onnx_export():
-        img_shape = shape_as_tensor(x)[2:].flip(0).view(1, 1, 2).to(
-            x.device).float()
-    else:
-        img_shape = torch.tensor(x.shape[2:]).flip(0).view(1, 1, 2).to(
-            x.device).float()
-    return img_shape
+    return (
+        shape_as_tensor(x)[2:].flip(0).view(1, 1, 2).to(x.device).float()
+        if torch.onnx.is_in_onnx_export()
+        else torch.tensor(x.shape[2:])
+        .flip(0)
+        .view(1, 1, 2)
+        .to(x.device)
+        .float()
+    )
 
 
 def abs_img_point_to_rel_img_point(abs_img_points, img, spatial_scale=1.):
@@ -233,10 +235,7 @@ def rel_roi_point_to_rel_img_point(rois,
     """
 
     abs_img_point = rel_roi_point_to_abs_img_point(rois, rel_roi_points)
-    rel_img_point = abs_img_point_to_rel_img_point(abs_img_point, img,
-                                                   spatial_scale)
-
-    return rel_img_point
+    return abs_img_point_to_rel_img_point(abs_img_point, img, spatial_scale)
 
 
 def point_sample(input, points, align_corners=False, **kwargs):
@@ -325,12 +324,11 @@ class SimpleRoIAlign(nn.Module):
             point_feats = torch.cat(point_feats, dim=0)
 
         channels = features.size(1)
-        roi_feats = point_feats.reshape(num_rois, channels, *self.output_size)
-
-        return roi_feats
+        return point_feats.reshape(num_rois, channels, *self.output_size)
 
     def __repr__(self):
         format_str = self.__class__.__name__
-        format_str += '(output_size={}, spatial_scale={}'.format(
-            self.output_size, self.spatial_scale)
+        format_str += (
+            f'(output_size={self.output_size}, spatial_scale={self.spatial_scale}'
+        )
         return format_str

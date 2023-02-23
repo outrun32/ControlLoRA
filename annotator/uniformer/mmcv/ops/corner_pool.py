@@ -18,9 +18,7 @@ class TopPoolFunction(Function):
 
     @staticmethod
     def symbolic(g, input):
-        output = g.op(
-            'mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['top']))
-        return output
+        return g.op('mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['top']))
 
     @staticmethod
     def forward(ctx, input):
@@ -31,17 +29,16 @@ class TopPoolFunction(Function):
     @staticmethod
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
-        output = ext_module.top_pool_backward(input, grad_output)
-        return output
+        return ext_module.top_pool_backward(input, grad_output)
 
 
 class BottomPoolFunction(Function):
 
     @staticmethod
     def symbolic(g, input):
-        output = g.op(
-            'mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['bottom']))
-        return output
+        return g.op(
+            'mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['bottom'])
+        )
 
     @staticmethod
     def forward(ctx, input):
@@ -52,17 +49,14 @@ class BottomPoolFunction(Function):
     @staticmethod
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
-        output = ext_module.bottom_pool_backward(input, grad_output)
-        return output
+        return ext_module.bottom_pool_backward(input, grad_output)
 
 
 class LeftPoolFunction(Function):
 
     @staticmethod
     def symbolic(g, input):
-        output = g.op(
-            'mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['left']))
-        return output
+        return g.op('mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['left']))
 
     @staticmethod
     def forward(ctx, input):
@@ -73,17 +67,14 @@ class LeftPoolFunction(Function):
     @staticmethod
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
-        output = ext_module.left_pool_backward(input, grad_output)
-        return output
+        return ext_module.left_pool_backward(input, grad_output)
 
 
 class RightPoolFunction(Function):
 
     @staticmethod
     def symbolic(g, input):
-        output = g.op(
-            'mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['right']))
-        return output
+        return g.op('mmcv::MMCVCornerPool', input, mode_i=int(_mode_dict['right']))
 
     @staticmethod
     def forward(ctx, input):
@@ -94,8 +85,7 @@ class RightPoolFunction(Function):
     @staticmethod
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
-        output = ext_module.right_pool_backward(input, grad_output)
-        return output
+        return ext_module.right_pool_backward(input, grad_output)
 
 
 class CornerPool(nn.Module):
@@ -140,9 +130,10 @@ class CornerPool(nn.Module):
         self.corner_pool = self.pool_functions[mode]
 
     def forward(self, x):
-        if torch.__version__ != 'parrots' and torch.__version__ >= '1.5.0':
-            if torch.onnx.is_in_onnx_export():
-                assert torch.__version__ >= '1.7.0', \
+        if torch.__version__ == 'parrots' or torch.__version__ < '1.5.0':
+            return self.corner_pool.apply(x)
+        if torch.onnx.is_in_onnx_export():
+            assert torch.__version__ >= '1.7.0', \
                     'When `cummax` serves as an intermediate component whose '\
                     'outputs is used as inputs for another modules, it\'s '\
                     'expected that pytorch version must be >= 1.7.0, '\
@@ -150,12 +141,10 @@ class CornerPool(nn.Module):
                     'appears in op that does not forward tuples, unsupported '\
                     'kind: prim::PythonOp`.'
 
-            dim, flip = self.cummax_dim_flip[self.mode]
-            if flip:
-                x = x.flip(dim)
-            pool_tensor, _ = torch.cummax(x, dim=dim)
-            if flip:
-                pool_tensor = pool_tensor.flip(dim)
-            return pool_tensor
-        else:
-            return self.corner_pool.apply(x)
+        dim, flip = self.cummax_dim_flip[self.mode]
+        if flip:
+            x = x.flip(dim)
+        pool_tensor, _ = torch.cummax(x, dim=dim)
+        if flip:
+            pool_tensor = pool_tensor.flip(dim)
+        return pool_tensor

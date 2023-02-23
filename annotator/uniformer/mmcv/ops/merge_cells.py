@@ -134,8 +134,7 @@ class ConcatCell(BaseMergeCell):
                                          **kwargs)
 
     def _binary_op(self, x1, x2):
-        ret = torch.cat([x1, x2], dim=1)
-        return ret
+        return torch.cat([x1, x2], dim=1)
 
 
 class GlobalPoolingCell(BaseMergeCell):

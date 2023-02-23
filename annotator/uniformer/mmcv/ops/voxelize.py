@@ -114,19 +114,15 @@ class Voxelization(nn.Module):
         self.pcd_shape = [*input_feat_shape, 1][::-1]
 
     def forward(self, input):
-        if self.training:
-            max_voxels = self.max_voxels[0]
-        else:
-            max_voxels = self.max_voxels[1]
-
+        max_voxels = self.max_voxels[0] if self.training else self.max_voxels[1]
         return voxelization(input, self.voxel_size, self.point_cloud_range,
                             self.max_num_points, max_voxels)
 
     def __repr__(self):
-        s = self.__class__.__name__ + '('
-        s += 'voxel_size=' + str(self.voxel_size)
-        s += ', point_cloud_range=' + str(self.point_cloud_range)
-        s += ', max_num_points=' + str(self.max_num_points)
-        s += ', max_voxels=' + str(self.max_voxels)
+        s = f'{self.__class__.__name__}('
+        s += f'voxel_size={str(self.voxel_size)}'
+        s += f', point_cloud_range={str(self.point_cloud_range)}'
+        s += f', max_num_points={str(self.max_num_points)}'
+        s += f', max_voxels={str(self.max_voxels)}'
         s += ')'
         return s

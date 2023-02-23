@@ -199,7 +199,7 @@ def force_fp32(apply_to=None, out_fp16=False):
                     else:
                         new_args.append(args[i])
             # convert the kwargs that need to be processed
-            new_kwargs = dict()
+            new_kwargs = {}
             if kwargs:
                 for arg_name, arg_value in kwargs.items():
                     if arg_name in args_to_cast:
@@ -350,24 +350,25 @@ class LossScaler:
         """Check if params contain overflow."""
         if self.mode != 'dynamic':
             return False
-        for p in params:
-            if p.grad is not None and LossScaler._has_inf_or_nan(p.grad.data):
-                return True
-        return False
+        return any(
+            p.grad is not None and LossScaler._has_inf_or_nan(p.grad.data)
+            for p in params
+        )
 
-    def _has_inf_or_nan(x):
+    def _has_inf_or_nan(self):
         """Check if params contain NaN."""
         try:
-            cpu_sum = float(x.float().sum())
+            cpu_sum = float(self.float().sum())
         except RuntimeError as instance:
             if 'value cannot be converted' not in instance.args[0]:
                 raise
             return True
         else:
-            if cpu_sum == float('inf') or cpu_sum == -float('inf') \
-                    or cpu_sum != cpu_sum:
-                return True
-            return False
+            return (
+                cpu_sum == float('inf')
+                or cpu_sum == -float('inf')
+                or cpu_sum != cpu_sum
+            )
 
     def update_scale(self, overflow):
         """update the current loss scale value when overflow happens."""
@@ -376,10 +377,9 @@ class LossScaler:
         if overflow:
             self.cur_scale = max(self.cur_scale / self.scale_factor, 1)
             self.last_overflow_iter = self.cur_iter
-        else:
-            if (self.cur_iter - self.last_overflow_iter) % \
-                    self.scale_window == 0:
-                self.cur_scale *= self.scale_factor
+        elif (self.cur_iter - self.last_overflow_iter) % \
+                        self.scale_window == 0:
+            self.cur_scale *= self.scale_factor
         self.cur_iter += 1
 
     def state_dict(self):

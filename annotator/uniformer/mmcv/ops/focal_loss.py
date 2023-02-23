@@ -44,7 +44,7 @@ class SigmoidFocalLossFunction(Function):
             assert weight.dim() == 1
             assert input.size(1) == weight.size(0)
         ctx.reduction_dict = {'none': 0, 'mean': 1, 'sum': 2}
-        assert reduction in ctx.reduction_dict.keys()
+        assert reduction in ctx.reduction_dict
 
         ctx.gamma = float(gamma)
         ctx.alpha = float(alpha)
@@ -138,7 +138,7 @@ class SoftmaxFocalLossFunction(Function):
             assert weight.dim() == 1
             assert input.size(1) == weight.size(0)
         ctx.reduction_dict = {'none': 0, 'mean': 1, 'sum': 2}
-        assert reduction in ctx.reduction_dict.keys()
+        assert reduction in ctx.reduction_dict
 
         ctx.gamma = float(gamma)
         ctx.alpha = float(alpha)

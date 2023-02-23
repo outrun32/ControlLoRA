@@ -91,11 +91,7 @@ class ProfilerHook(Hook):
                 raise ValueError(
                     f'activity should be "cpu" or "cuda", but got {activity}')
 
-        if schedule is not None:
-            self.schedule = profiler.schedule(**schedule)
-        else:
-            self.schedule = None
-
+        self.schedule = profiler.schedule(**schedule) if schedule is not None else None
         self.on_trace_ready = on_trace_ready
         self.record_shapes = record_shapes
         self.profile_memory = profile_memory

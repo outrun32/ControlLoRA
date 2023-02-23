@@ -67,8 +67,7 @@ class NeptuneLoggerHook(LoggerHook):
 
     @master_only
     def log(self, runner):
-        tags = self.get_loggable_tags(runner)
-        if tags:
+        if tags := self.get_loggable_tags(runner):
             for tag_name, tag_value in tags.items():
                 if self.with_step:
                     self.run[tag_name].log(

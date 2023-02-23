@@ -67,7 +67,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     if rank == 0:
         prog_bar = mmcv.ProgressBar(len(dataset))
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
-    for i, data in enumerate(data_loader):
+    for data in data_loader:
         with torch.no_grad():
             result = model(return_loss=False, **data)
         results.extend(result)
@@ -128,28 +128,23 @@ def collect_results_cpu(result_part, size, tmpdir=None):
     # dump the part result to the dir
     mmcv.dump(result_part, osp.join(tmpdir, f'part_{rank}.pkl'))
     dist.barrier()
-    # collect all parts
     if rank != 0:
         return None
-    else:
-        # load results of all parts from tmp dir
-        part_list = []
-        for i in range(world_size):
-            part_file = osp.join(tmpdir, f'part_{i}.pkl')
-            part_result = mmcv.load(part_file)
-            # When data is severely insufficient, an empty part_result
-            # on a certain gpu could makes the overall outputs empty.
-            if part_result:
-                part_list.append(part_result)
-        # sort the results
-        ordered_results = []
-        for res in zip(*part_list):
-            ordered_results.extend(list(res))
-        # the dataloader may pad some samples
-        ordered_results = ordered_results[:size]
-        # remove tmp dir
-        shutil.rmtree(tmpdir)
-        return ordered_results
+    # load results of all parts from tmp dir
+    part_list = []
+    for i in range(world_size):
+        part_file = osp.join(tmpdir, f'part_{i}.pkl')
+        if part_result := mmcv.load(part_file):
+            part_list.append(part_result)
+    # sort the results
+    ordered_results = []
+    for res in zip(*part_list):
+        ordered_results.extend(list(res))
+    # the dataloader may pad some samples
+    ordered_results = ordered_results[:size]
+    # remove tmp dir
+    shutil.rmtree(tmpdir)
+    return ordered_results
 
 
 def collect_results_gpu(result_part, size):
@@ -188,15 +183,12 @@ def collect_results_gpu(result_part, size):
     if rank == 0:
         part_list = []
         for recv, shape in zip(part_recv_list, shape_list):
-            part_result = pickle.loads(recv[:shape[0]].cpu().numpy().tobytes())
-            # When data is severely insufficient, an empty part_result
-            # on a certain gpu could makes the overall outputs empty.
-            if part_result:
+            if part_result := pickle.loads(
+                recv[: shape[0]].cpu().numpy().tobytes()
+            ):
                 part_list.append(part_result)
         # sort the results
         ordered_results = []
         for res in zip(*part_list):
             ordered_results.extend(list(res))
-        # the dataloader may pad some samples
-        ordered_results = ordered_results[:size]
-        return ordered_results
+        return ordered_results[:size]

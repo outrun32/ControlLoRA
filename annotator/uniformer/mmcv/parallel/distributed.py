@@ -63,10 +63,9 @@ class MMDistributedDataParallel(DistributedDataParallel):
                 self.reducer.prepare_for_backward(list(_find_tensors(output)))
             else:
                 self.reducer.prepare_for_backward([])
-        else:
-            if ('parrots' not in TORCH_VERSION
+        elif ('parrots' not in TORCH_VERSION
                     and digit_version(TORCH_VERSION) > digit_version('1.2')):
-                self.require_forward_param_sync = False
+            self.require_forward_param_sync = False
         return output
 
     def val_step(self, *inputs, **kwargs):
@@ -105,8 +104,7 @@ class MMDistributedDataParallel(DistributedDataParallel):
                 self.reducer.prepare_for_backward(list(_find_tensors(output)))
             else:
                 self.reducer.prepare_for_backward([])
-        else:
-            if ('parrots' not in TORCH_VERSION
+        elif ('parrots' not in TORCH_VERSION
                     and digit_version(TORCH_VERSION) > digit_version('1.2')):
-                self.require_forward_param_sync = False
+            self.require_forward_param_sync = False
         return output

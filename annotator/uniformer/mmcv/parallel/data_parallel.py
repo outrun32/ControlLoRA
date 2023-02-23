@@ -33,13 +33,12 @@ class MMDataParallel(DataParallel):
         The main difference lies in the CPU inference where the data in
         :class:`DataContainers` will still be gathered.
         """
-        if not self.device_ids:
-            # We add the following line thus the module could gather and
-            # convert data containers as those in GPU inference
-            inputs, kwargs = self.scatter(inputs, kwargs, [-1])
-            return self.module(*inputs[0], **kwargs[0])
-        else:
+        if self.device_ids:
             return super().forward(*inputs, **kwargs)
+        # We add the following line thus the module could gather and
+        # convert data containers as those in GPU inference
+        inputs, kwargs = self.scatter(inputs, kwargs, [-1])
+        return self.module(*inputs[0], **kwargs[0])
 
     def scatter(self, inputs, kwargs, device_ids):
         return scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)

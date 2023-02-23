@@ -148,11 +148,10 @@ class CityscapesDataset(CustomDataset):
             dict[str, float]: Cityscapes/default metrics.
         """
 
-        eval_results = dict()
+        eval_results = {}
         metrics = metric.copy() if isinstance(metric, list) else [metric]
         if 'cityscapes' in metrics:
-            eval_results.update(
-                self._evaluate_cityscapes(results, logger, imgfile_prefix))
+            eval_results |= self._evaluate_cityscapes(results, logger, imgfile_prefix)
             metrics.remove('cityscapes')
         if len(metrics) > 0:
             eval_results.update(
@@ -185,12 +184,8 @@ class CityscapesDataset(CustomDataset):
 
         result_files, tmp_dir = self.format_results(results, imgfile_prefix)
 
-        if tmp_dir is None:
-            result_dir = imgfile_prefix
-        else:
-            result_dir = tmp_dir.name
-
-        eval_results = dict()
+        result_dir = imgfile_prefix if tmp_dir is None else tmp_dir.name
+        eval_results = {}
         print_log(f'Evaluating results under {result_dir} ...', logger=logger)
 
         CSEval.args.evalInstLevelScore = True
@@ -208,8 +203,7 @@ class CityscapesDataset(CustomDataset):
             seg_map_list.append(osp.join(self.ann_dir, seg_map))
             pred_list.append(CSEval.getPrediction(CSEval.args, seg_map))
 
-        eval_results.update(
-            CSEval.evaluateImgLists(pred_list, seg_map_list, CSEval.args))
+        eval_results |= CSEval.evaluateImgLists(pred_list, seg_map_list, CSEval.args)
 
         if tmp_dir is not None:
             tmp_dir.cleanup()

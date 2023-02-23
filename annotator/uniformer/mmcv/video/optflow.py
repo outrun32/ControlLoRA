@@ -136,8 +136,7 @@ def dequantize_flow(dx, dy, max_val=0.02, denorm=True):
     if denorm:
         dx *= dx.shape[1]
         dy *= dx.shape[0]
-    flow = np.dstack((dx, dy))
-    return flow
+    return np.dstack((dx, dy))
 
 
 def flow_warp(img, flow, filling_value=0, interpolate_mode='nearest'):
@@ -224,11 +223,9 @@ def flow_from_bytes(content):
     width = np.frombuffer(content[4:], np.int32, 1).squeeze()
     # height in third 4 bytes
     height = np.frombuffer(content[8:], np.int32, 1).squeeze()
-    # after first 12 bytes, all bytes are flow
-    flow = np.frombuffer(content[12:], np.float32, width * height * 2).reshape(
-        (height, width, 2))
-
-    return flow
+    return np.frombuffer(content[12:], np.float32, width * height * 2).reshape(
+        (height, width, 2)
+    )
 
 
 def sparse_flow_from_bytes(content):
